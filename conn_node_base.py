@@ -6,6 +6,7 @@ from nodeeditor.node_node import Node
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
+from logger import SimpleLogger, logger
 
 
 class ConnGraphicsNode(QDMGraphicsNode):
@@ -64,13 +65,16 @@ class ConnNode(Node):
         self.output_socket_position = RIGHT_CENTER
 
     def onInputChanged(self, socket=None):
-        print("%s::__onInputChanged" % self.__class__.__name__)
+        SimpleLogger.instance().debug("%s::__onInputChanged" % self.__class__.__name__)
+        logger.debug("%s::__onInputChanged" % self.__class__.__name__)
         self.markDirty()
         self.eval()
 
 
     def onEdgeConnectionChanged(self, new_edge):
-        print(self, new_edge)
+        SimpleLogger.instance().debug("%s::__onEdgeConnectionChanged" % self.__class__.__name__)
+        logger.debug("%s::__onEdgeConnectionChanged" % self.__class__.__name__)
+
         return super().onEdgeConnectionChanged(new_edge)
 
 
@@ -81,5 +85,7 @@ class ConnNode(Node):
 
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
-        print("Deserialized ConnNode '%s'" % self.__class__.__name__, "res:", res)
+
+        SimpleLogger.instance().debug("Deserialized ConnNode '%s'" % self.__class__.__name__)
+        logger.debug("Deserialized ConnNode '%s'" % self.__class__.__name__)
         return res

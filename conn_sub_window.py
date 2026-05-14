@@ -1,6 +1,7 @@
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
 from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
+from qtpy.QtWidgets import QGraphicsView
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
 from nodeeditor.node_editor_widget import NodeEditorWidget
@@ -28,6 +29,9 @@ class ConnSubWindow(NodeEditorWidget):
         self.scene.addDragEnterListener(self.onDragEnter)
         self.scene.addDropListener(self.onDrop)
         self.scene.setNodeClassSelector(self.getNodeClassFromData)
+
+        # TODO 需要添加一种机制用于运行时切换更新频率
+        # self.view.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
 
         self._close_event_listeners = []
 
