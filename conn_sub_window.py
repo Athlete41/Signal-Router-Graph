@@ -61,7 +61,7 @@ class CalculatorSubWindow(NodeEditorWidget):
         keys.sort()
         for key in keys:
             node = CONN_NODES[key]
-            self.node_actions[node.tppath] = QAction(QIcon(node.icon), node.title)
+            self.node_actions[node.tppath] = QAction(QIcon(node.icon), node.name)
             self.node_actions[node.tppath].setData(node.tppath)
 
     def initNodesContextMenu(self):
@@ -94,16 +94,16 @@ class CalculatorSubWindow(NodeEditorWidget):
             dataStream = QDataStream(eventData, QIODevice.ReadOnly)
             pixmap = QPixmap()
             dataStream >> pixmap
-            op_code = dataStream.readInt()
+            tppath = tuple(dataStream.readQStringList())
             text = dataStream.readQString()
 
             mouse_position = event.pos()
             scene_position = self.scene.grScene.views()[0].mapToScene(mouse_position)
 
-            if DEBUG: print("GOT DROP: [%d] '%s'" % (op_code, text), "mouse:", mouse_position, "scene:", scene_position)
+            if DEBUG: print("GOT DROP: [%d] '%s'" % (tppath, text), "mouse:", mouse_position, "scene:", scene_position)
 
             try:
-                node = get_class_from_opcode(op_code)(self.scene)
+                node = get_class_from_tppath(tppath)(self.scene)
                 node.setPos(scene_position.x(), scene_position.y())
                 self.scene.history.storeHistory("Created node %s" % node.__class__.__name__)
             except Exception as e: dumpException(e)
@@ -204,7 +204,7 @@ class CalculatorSubWindow(NodeEditorWidget):
         action = context_menu.exec_(self.mapToGlobal(event.pos()))
 
         if action is not None:
-            new_calc_node = get_class_from_opcode(action.data())(self.scene)
+            new_calc_node = get_class_from_tppath(action.data())(self.scene)
             scene_pos = self.scene.getView().mapToScene(event.pos())
             new_calc_node.setPos(scene_pos.x(), scene_pos.y())
             if DEBUG_CONTEXT: print("Selected node:", new_calc_node)

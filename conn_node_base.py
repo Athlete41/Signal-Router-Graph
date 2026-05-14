@@ -38,22 +38,22 @@ class ConnGraphicsNode(QDMGraphicsNode):
 
 class ConnContent(QDMNodeContentWidget):
     def initUI(self):
-        lbl = QLabel(self.node.content_label, self)
-        lbl.setObjectName(self.node.content_label_objname)
+        ...
 
 
 class ConnNode(Node):
     icon = ""
-    tppath = ("未定义")
-    title = "未定义"
-    content_label = ""
-    content_label_objname = "conn_node_bg"
+    tppath = ("未定义的路径", )
+    name = "未定义的名称"
+    tooltip = "未定义的提示"
+    
+    conn_title = "未定义的标题"
 
     GraphicsNode_class = ConnGraphicsNode
     NodeContent_class = ConnContent
 
     def __init__(self, scene, inputs=[2,2], outputs=[1]):
-        super().__init__(scene, self.__class__.title, inputs, outputs)
+        super().__init__(scene, self.__class__.conn_title, inputs, outputs)
 
         self.value = None
 

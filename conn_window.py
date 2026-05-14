@@ -9,6 +9,7 @@ from conn_sub_window import CalculatorSubWindow
 from conn_drag_treebox import QDMDragTreebox
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES
+from logger import SimpleLogger, SimpleLoggerBrowser, logger
 
 # Enabling edge validators
 from nodeeditor.node_edge import Edge
@@ -32,8 +33,8 @@ DEBUG = True
 class ConnectionWindow(NodeEditorWindow):
 
     def initUI(self):
-        self.name_company = 'Blenderfreak'
-        self.name_product = 'Calculator NodeEditor'
+        self.name_company = '未知'
+        self.name_product = '连接图编辑器'
 
         self.stylesheet_filename = os.path.join(os.path.dirname(__file__), "qss/nodeeditor.qss")
         loadStylesheets(
@@ -43,10 +44,10 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.empty_icon = QIcon(".")
 
-        if DEBUG:
-            print("Registered nodes:")
-            pp(CONN_NODES)
+        SimpleLogger.instance()
 
+        logger.debug("注册的节点:")
+        logger.debug(CONN_NODES)
 
         self.mdiArea = QMdiArea()
         self.mdiArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -60,7 +61,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.mdiArea.subWindowActivated.connect(self.updateMenus)
 
         self.createNodesDock()
-
+        self.createSimpleLoggerDock()
         self.createActions()
         self.createMenus()
         self.createToolBars()
@@ -69,7 +70,11 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.readSettings()
 
-        self.setWindowTitle("Calculator NodeEditor Example")
+        self.setWindowTitle("连接图编辑器")
+        
+        SimpleLogger.instance().debug("注册的节点:")
+        SimpleLogger.instance().debug(CONN_NODES)
+
 
     def closeEvent(self, event):
         self.mdiArea.closeAllSubWindows()
@@ -136,10 +141,8 @@ class ConnectionWindow(NodeEditorWindow):
 
 
     def about(self):
-        QMessageBox.about(self, "About Calculator NodeEditor Example",
-                "The <b>Calculator NodeEditor</b> example demonstrates how to write multiple "
-                "document interface applications using PyQt5 and NodeEditor. For more information visit: "
-                "<a href='https://www.blenderfreak.com/'>www.BlenderFreak.com</a>")
+        QMessageBox.about(self, "关于连接节点编辑器示例",
+                "无介绍")
 
     def createMenus(self):
         super().createMenus()
@@ -238,11 +241,22 @@ class ConnectionWindow(NodeEditorWindow):
     def createNodesDock(self):
         self.nodesListWidget = QDMDragTreebox()
 
-        self.nodesDock = QDockWidget("Nodes")
+        self.nodesDock = QDockWidget("节点")
         self.nodesDock.setWidget(self.nodesListWidget)
         self.nodesDock.setFloating(False)
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.nodesDock)
+
+    def createSimpleLoggerDock(self):
+        self.simpleLoggerBrowser = SimpleLoggerBrowser()
+        SimpleLogger.instance().newNotify.connect(self.simpleLoggerBrowser.updateNewMsg)
+        
+        self.simpleLoggerDock = QDockWidget("简单日志")
+        self.simpleLoggerDock.setWidget(self.simpleLoggerBrowser)
+        self.simpleLoggerDock.setFloating(False)
+
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.simpleLoggerDock)
+
 
     def createStatusBar(self):
         self.statusBar().showMessage("Ready")

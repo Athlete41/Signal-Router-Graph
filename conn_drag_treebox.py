@@ -50,6 +50,8 @@ class QDMDragTreebox(QTreeWidget):
             conn_item: QTreeWidgetItem = parent_node
             
             pixmap = QPixmap(conn_cls.icon)
+            conn_item.setText(0, conn_cls.name)
+            conn_item.setToolTip(0, conn_cls.tooltip)
             conn_item.setIcon(0, QIcon(pixmap))
             conn_item.setSizeHint(0, QSize(32, 32))
 
@@ -65,13 +67,17 @@ class QDMDragTreebox(QTreeWidget):
         try:
             item = self.currentItem()
             tppath = item.data(0, Qt.UserRole + 1)
+
+            if not tppath: 
+                return
+            
             pixmap = QPixmap(item.data(0, Qt.UserRole))
 
 
             itemData = QByteArray()
             dataStream = QDataStream(itemData, QIODevice.WriteOnly)
             dataStream << pixmap
-            print(tppath)
+
             dataStream.writeQStringList(list(tppath))
             dataStream.writeQString(item.text(0))
 
