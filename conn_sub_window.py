@@ -32,6 +32,8 @@ class ConnSubWindow(NodeEditorWidget):
 
         # TODO 需要添加一种机制用于运行时切换更新频率
         # self.view.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        logger.warning(f"记得完成 setViewportUpdateMode 的机制, 当前值为 {self.view.viewportUpdateMode()}")
+        SimpleLogger.instance().warning(f"记得完成 setViewportUpdateMode 的机制, 当前值为 {self.view.viewportUpdateMode()}")
 
         self._close_event_listeners = []
 
