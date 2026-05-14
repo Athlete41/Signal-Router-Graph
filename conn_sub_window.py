@@ -8,6 +8,7 @@ from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_S
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
 from nodeeditor.utils import dumpException
 from nodeeditor.node_node import Node
+from logger import logger, SimpleLogger
 
 DEBUG = False
 DEBUG_CONTEXT = False
@@ -32,12 +33,15 @@ class CalculatorSubWindow(NodeEditorWidget):
 
     def getNodeClassFromData(self, data):
         if 'tppath' not in data: return Node
-        if not isinstance(data['tppath'], list): 
-            print(f"警告: tppath 不是列表类型，当前值为 {data['tppath']}")
+        if not isinstance(data['tppath'], (list, tuple)): 
+            SimpleLogger.warning(f"tppath 不是 list 或 tuple 类型, 当前值为 {data['tppath']}")
+            logger.warning(f"tppath 不是 list 或 tuple 类型, 当前值为 {data['tppath']}")
             return Node
+        
+        if isinstance(data['tppath'], list):
+            data['tppath'] = tuple(data['tppath'])
 
-        tppath = tuple(data['tppath'])
-        return get_class_from_tppath(tppath)
+        return get_class_from_tppath(data['tppath'])
 
     def doEvalOutputs(self):
         # eval all output nodes
