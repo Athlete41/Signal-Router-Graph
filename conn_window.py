@@ -225,18 +225,18 @@ class ConnectionWindow(NodeEditorWindow):
         windows = self.mdiArea.subWindowList()
         self.actSeparator.setVisible(len(windows) != 0)
 
-        for i, window in enumerate(windows):
-            child = window.widget()
+        # for i, window in enumerate(windows):
+        #     child = window.widget()
 
-            text = "%d %s" % (i + 1, child.getUserFriendlyFilename())
-            if i < 9:
-                text = '&' + text
+        #     text = "%d %s" % (i + 1, child.getUserFriendlyFilename())
+        #     if i < 9:
+        #         text = '&' + text
 
-            action = self.windowMenu.addAction(text)
-            action.setCheckable(True)
-            action.setChecked(child is self.getCurrentNodeEditorWidget())
-            action.triggered.connect(self.windowMapper.map)
-            self.windowMapper.setMapping(action, window)
+        #     action = self.windowMenu.addAction(text)
+        #     action.setCheckable(True)
+        #     action.setChecked(child is self.getCurrentNodeEditorWidget())
+        #     action.triggered.connect(self.windowMapper.map)
+        #     self.windowMapper.setMapping(action, window)
 
     def onWindowNodesToolbar(self):
         if self.nodesDock.isVisible():
