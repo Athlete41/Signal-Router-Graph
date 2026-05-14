@@ -43,6 +43,7 @@ class QDMDragTreebox(QTreeWidget):
         self.setDragEnabled(True)
 
         self.addMyItems()
+        self.expandAll()
 
     def addMyItems(self):
         keys = list(CONN_NODES.keys())
