@@ -36,9 +36,6 @@ class ConnGraphicsNode(QDMGraphicsNode):
         )
 
 
-class ConnContent(QDMNodeContentWidget):
-    def initUI(self):
-        ...
 
 
 class ConnNode(Node):
@@ -50,7 +47,7 @@ class ConnNode(Node):
     conn_title = "未定义的标题"
 
     GraphicsNode_class = ConnGraphicsNode
-    NodeContent_class = ConnContent
+    NodeContent_class = QDMNodeContentWidget
 
     def __init__(self, scene, inputs=[2,2], outputs=[1]):
         super().__init__(scene, self.__class__.conn_title, inputs, outputs)

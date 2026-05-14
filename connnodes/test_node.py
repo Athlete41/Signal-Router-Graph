@@ -1,5 +1,5 @@
 from conn_conf import register_node, set_node_display
-from conn_node_base import ConnNode, ConnGraphicsNode, ConnContent
+from conn_node_base import ConnNode, ConnGraphicsNode
 from logger import SimpleLogger, LEVEL, logging
 
 if LEVEL <= logging.DEBUG:
@@ -17,7 +17,6 @@ if LEVEL <= logging.DEBUG:
             SimpleLogger.instance().info("测试节点1创建成功！")
 
         def initInnerClasses(self):
-            self.content = ConnContent(self)
             self.grNode = ConnGraphicsNode(self)
 
 
@@ -46,5 +45,4 @@ if LEVEL <= logging.DEBUG:
             SimpleLogger.instance().info("测试节点2创建成功！")
 
         def initInnerClasses(self):
-            self.content = ConnContent(self)
             self.grNode = ConnGraphicsNode(self)
