@@ -2,7 +2,7 @@ from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
 from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
 
-from conn_conf import CONN_NODES, get_class_from_tppath, LISTBOX_MIMETYPE
+from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
 from nodeeditor.node_editor_widget import NodeEditorWidget
 from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_SQUARE
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
@@ -59,17 +59,43 @@ class CalculatorSubWindow(NodeEditorWidget):
         self.node_actions = {}
         keys = list(CONN_NODES.keys())
         keys.sort()
-        for key in keys:
-            node = CONN_NODES[key]
+        for tpkey in keys:
+            if not tpkey: continue
+
+            node = CONN_NODES[tpkey]
             self.node_actions[node.tppath] = QAction(QIcon(node.icon), node.name)
             self.node_actions[node.tppath].setData(node.tppath)
 
+
+        old = getattr(self, "rightClickMenu", None)
+        if old: 
+            old.deleteLater()
+
+
+        self.rightClickMenu = QMenu(self)
+        self.rightClickMenu_map = {}
+        for tpkey in keys:
+            if not tpkey: continue
+
+            submenu = self.rightClickMenu
+            for i in range(len(tpkey) - 1):
+                subkey = tpkey[0:i+1]
+                if subkey not in self.rightClickMenu_map:
+                    temp = QMenu(self.rightClickMenu)
+                    submenu.addMenu(temp)
+                    submenu = temp
+                    self.rightClickMenu_map[subkey] = submenu
+
+                    display_conf = ALL_NODES_DISPLAY.get(subkey, {})
+                    submenu.setTitle(display_conf.get("name", subkey[-1]))
+                    submenu.setIcon(QIcon(display_conf.get("icon", "")))
+                else:
+                    submenu = self.rightClickMenu_map[subkey]
+
+            submenu.addAction(self.node_actions[tpkey])
+
     def initNodesContextMenu(self):
-        context_menu = QMenu(self)
-        keys = list(CONN_NODES.keys())
-        keys.sort()
-        for key in keys: 
-            context_menu.addAction(self.node_actions[key])
+        context_menu = self.rightClickMenu
         return context_menu
 
     def setTitle(self):
