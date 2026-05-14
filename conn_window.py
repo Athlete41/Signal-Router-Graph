@@ -9,7 +9,7 @@ from conn_sub_window import CalculatorSubWindow
 from conn_drag_treebox import QDMDragTreeboxPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES
-from logger import SimpleLogger, SimpleLoggerBrowser, logger
+from logger import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
 
 # Enabling edge validators
 from nodeeditor.node_edge import Edge
@@ -262,7 +262,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.simpleLoggerBrowser = SimpleLoggerBrowser()
         SimpleLogger.instance().newNotify.connect(self.simpleLoggerBrowser.updateNewMsg)
         
-        self.simpleLoggerDock = QDockWidget("简单日志")
+        self.simpleLoggerDock = QDockWidget(f"简单日志 - {logging.getLevelName(LEVEL)}")
         self.simpleLoggerDock.setWidget(self.simpleLoggerBrowser)
         self.simpleLoggerDock.setFloating(False)
 
