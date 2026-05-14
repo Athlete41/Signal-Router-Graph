@@ -6,7 +6,7 @@ from qtpy.QtCore import Qt, QSignalMapper
 from nodeeditor.utils import loadStylesheets
 from nodeeditor.node_editor_window import NodeEditorWindow
 from conn_sub_window import CalculatorSubWindow
-from conn_drag_treebox import QDMDragTreebox
+from conn_drag_treebox import QDMDragTreeboxPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES
 from logger import SimpleLogger, SimpleLoggerBrowser, logger
@@ -250,9 +250,9 @@ class ConnectionWindow(NodeEditorWindow):
         pass
 
     def createNodesDock(self):
-        self.nodesListWidget = QDMDragTreebox()
+        self.nodesListWidget = QDMDragTreeboxPanel()
 
-        self.nodesDock = QDockWidget("节点")
+        self.nodesDock = QDockWidget("节点面板")
         self.nodesDock.setWidget(self.nodesListWidget)
         self.nodesDock.setFloating(False)
 
