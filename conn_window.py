@@ -103,6 +103,10 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.actAbout = QAction("&About", self, statusTip="Show the application's About box", triggered=self.about)
 
+        # 更改重做快捷键为 Ctrl+Y
+        self.actRedo.deleteLater()
+        self.actRedo = QAction('&Redo', self, shortcut='Ctrl+Y', statusTip="Redo last operation", triggered=self.onEditRedo)
+
     def getCurrentNodeEditorWidget(self):
         """ we're returning NodeEditorWidget here... """
         activeSubWindow = self.mdiArea.activeSubWindow()
