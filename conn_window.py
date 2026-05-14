@@ -5,10 +5,10 @@ from qtpy.QtCore import Qt, QSignalMapper
 
 from nodeeditor.utils import loadStylesheets
 from nodeeditor.node_editor_window import NodeEditorWindow
-from calc_sub_window import CalculatorSubWindow
-from calc_drag_listbox import QDMDragListbox
+from conn_sub_window import CalculatorSubWindow
+from conn_drag_treebox import QDMDragTreebox
 from nodeeditor.utils import dumpException, pp
-from calc_conf import CALC_NODES
+from conn_conf import CONN_NODES
 
 # Enabling edge validators
 from nodeeditor.node_edge import Edge
@@ -26,10 +26,10 @@ Edge.registerEdgeValidator(edge_cannot_connect_input_and_output_of_same_node)
 import qss.nodeeditor_dark_resources
 
 
-DEBUG = False
+DEBUG = True
 
 
-class CalculatorWindow(NodeEditorWindow):
+class ConnectionWindow(NodeEditorWindow):
 
     def initUI(self):
         self.name_company = 'Blenderfreak'
@@ -45,7 +45,7 @@ class CalculatorWindow(NodeEditorWindow):
 
         if DEBUG:
             print("Registered nodes:")
-            pp(CALC_NODES)
+            pp(CONN_NODES)
 
 
         self.mdiArea = QMdiArea()
@@ -236,7 +236,7 @@ class CalculatorWindow(NodeEditorWindow):
         pass
 
     def createNodesDock(self):
-        self.nodesListWidget = QDMDragListbox()
+        self.nodesListWidget = QDMDragTreebox()
 
         self.nodesDock = QDockWidget("Nodes")
         self.nodesDock.setWidget(self.nodesListWidget)

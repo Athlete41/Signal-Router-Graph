@@ -2,11 +2,12 @@ from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
 from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
 
-from calc_conf import CALC_NODES, get_class_from_opcode, LISTBOX_MIMETYPE
+from conn_conf import CONN_NODES, get_class_from_tppath, LISTBOX_MIMETYPE
 from nodeeditor.node_editor_widget import NodeEditorWidget
 from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_SQUARE
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
 from nodeeditor.utils import dumpException
+from nodeeditor.node_node import Node
 
 DEBUG = False
 DEBUG_CONTEXT = False
@@ -30,8 +31,13 @@ class CalculatorSubWindow(NodeEditorWidget):
         self._close_event_listeners = []
 
     def getNodeClassFromData(self, data):
-        if 'op_code' not in data: return Node
-        return get_class_from_opcode(data['op_code'])
+        if 'tppath' not in data: return Node
+        if not isinstance(data['tppath'], list): 
+            print(f"警告: tppath 不是列表类型，当前值为 {data['tppath']}")
+            return Node
+
+        tppath = tuple(data['tppath'])
+        return get_class_from_tppath(tppath)
 
     def doEvalOutputs(self):
         # eval all output nodes
@@ -51,18 +57,19 @@ class CalculatorSubWindow(NodeEditorWidget):
 
     def initNewNodeActions(self):
         self.node_actions = {}
-        keys = list(CALC_NODES.keys())
+        keys = list(CONN_NODES.keys())
         keys.sort()
         for key in keys:
-            node = CALC_NODES[key]
-            self.node_actions[node.op_code] = QAction(QIcon(node.icon), node.op_title)
-            self.node_actions[node.op_code].setData(node.op_code)
+            node = CONN_NODES[key]
+            self.node_actions[node.tppath] = QAction(QIcon(node.icon), node.title)
+            self.node_actions[node.tppath].setData(node.tppath)
 
     def initNodesContextMenu(self):
         context_menu = QMenu(self)
-        keys = list(CALC_NODES.keys())
+        keys = list(CONN_NODES.keys())
         keys.sort()
-        for key in keys: context_menu.addAction(self.node_actions[key])
+        for key in keys: 
+            context_menu.addAction(self.node_actions[key])
         return context_menu
 
     def setTitle(self):

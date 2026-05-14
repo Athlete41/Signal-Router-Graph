@@ -2,7 +2,7 @@ import os, sys
 from qtpy.QtWidgets import QApplication
 
 
-from calc_window import CalculatorWindow
+from conn_window import ConnectionWindow
 
 
 if __name__ == '__main__':
@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # print(QStyleFactory.keys())
     app.setStyle('Fusion')
 
-    wnd = CalculatorWindow()
+    wnd = ConnectionWindow()
     wnd.show()
 
     sys.exit(app.exec_())
