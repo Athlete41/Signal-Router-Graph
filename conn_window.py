@@ -196,10 +196,15 @@ class ConnectionWindow(NodeEditorWindow):
     def updateWindowMenu(self):
         self.windowMenu.clear()
 
-        toolbar_nodes = self.windowMenu.addAction("Nodes Toolbar")
+        toolbar_nodes = self.windowMenu.addAction("节点面板")
         toolbar_nodes.setCheckable(True)
         toolbar_nodes.triggered.connect(self.onWindowNodesToolbar)
         toolbar_nodes.setChecked(self.nodesDock.isVisible())
+
+        toolbar_simpleLogger = self.windowMenu.addAction("简单日志面板")
+        toolbar_simpleLogger.setCheckable(True)
+        toolbar_simpleLogger.triggered.connect(self.onWindowSimpleLoggerToolbar)
+        toolbar_simpleLogger.setChecked(self.simpleLoggerDock.isVisible())
 
         self.windowMenu.addSeparator()
 
@@ -234,6 +239,12 @@ class ConnectionWindow(NodeEditorWindow):
             self.nodesDock.hide()
         else:
             self.nodesDock.show()
+
+    def onWindowSimpleLoggerToolbar(self):
+        if self.simpleLoggerDock.isVisible():
+            self.simpleLoggerDock.hide()
+        else:
+            self.simpleLoggerDock.show()
 
     def createToolBars(self):
         pass
