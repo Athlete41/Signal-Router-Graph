@@ -5,7 +5,7 @@ from qtpy.QtCore import Qt, QSignalMapper
 
 from nodeeditor.utils import loadStylesheets
 from nodeeditor.node_editor_window import NodeEditorWindow
-from conn_sub_window import CalculatorSubWindow
+from conn_sub_window import ConnSubWindow
 from conn_drag_treebox import QDMDragTreeboxPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES
