@@ -131,9 +131,9 @@ class ConnNode(Node):
             # 由信号提供者完成连接
             if output_socket.node is self:
                 signal_owner = output_socket.node
-                signal_key = self.getSignalKey(output_socket)
+                signal_key = self.getSlotKeyBySocket(output_socket)
                 slot_owner = input_socket.node
-                slot_key = input_socket.node.getSlotKey(input_socket)
+                slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
 
                 
                 isError = signal_key is None or slot_key is None
@@ -164,7 +164,7 @@ class ConnNode(Node):
 
 
 
-    def getSlotKey(self, socket) -> str| None:
+    def getSlotKeyBySocket(self, socket) -> str| None:
         idx = None
         try:
             idx = self.inputs.index(socket)
@@ -178,7 +178,7 @@ class ConnNode(Node):
 
         
 
-    def getSignalKey(self, socket) -> str| None:
+    def getSignalKeyBySocket(self, socket) -> str| None:
         idx = None
         try:
             idx = self.outputs.index(socket)
