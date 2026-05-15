@@ -37,3 +37,73 @@ class MyNode(Node):
 
 CLASS['MyNode'] = MyNode
 ```
+
+# 场景
+此框架默认使用`Scene`类管理场, 使用一下代码自定义场景类:
+
+```python
+class MyScene(Scene):
+    ...
+
+class MyNodeEditorWidget(NodeEditorWidget):
+    Scene_class = MyScene
+```
+## 自定义 Scene 的用途
+- 需要使用自定义连接类:
+默认`scene`使用`Edge`类, 并且没有提供一个方法来指定使用的连接。
+这是内部代码, 其注释指出:若是要使用自定义连接, 则需要重写`getEdgeClass`方法.
+
+```python
+class Scene(Serializable):
+    ...
+    def getEdgeClass(self):
+        """Return the class representing Edge. Override me if needed"""
+        return Edge
+```
+
+## 连接
+
+## 连接验证
+相关内部代码如下, 这非常简单, 使用`Edge.registerEdgeValidator`方法注册验证器。对所有连接有效。
+```python
+class Edge(Serializable):
+    ...
+    @classmethod
+    def registerEdgeValidator(cls, validator_callback: 'function'):
+        """Register Edge Validator Callback
+
+        :param validator_callback: A function handle to validate Edge
+        :type validator_callback: `function`
+        """
+        cls.edge_validators.append(validator_callback)
+
+    @classmethod
+    def validateEdge(cls, start_socket: 'Socket', end_socket: 'Socket') -> bool:
+        """Validate Edge agains all registered `Edge Validator Callbacks`
+
+        :param start_socket: Starting :class:`~nodeeditor.node_socket.Socket` of Edge to check
+        :type start_socket: :class:`~nodeeditor.node_socket.Socket`
+        :param end_socket: Target/End :class:`~nodeeditor.node_socket.Socket` of Edge to check
+        :type end_socket: :class:`~nodeeditor.node_socket.Socket`
+        :return: ``True`` if the Edge is valid or ``False`` if not
+        :rtype: ``bool``
+        """
+        for validator in cls.getEdgeValidators():
+            if not validator(start_socket, end_socket):
+                return False
+        return True
+```
+
+## 连接图形
+
+想要改变需要自定义连接图形，需要自定义 `MyGraphicsEdge` 类，并且在自定义的 `Edge` 类中重写 `getGraphicsEdgeClass` 指定。
+
+示例代码:
+```python
+MyEdge(Edge):
+    def getGraphicsEdgeClass(self):
+        return MyGraphicsEdge
+
+MyGraphicsEdge(QDMGraphicsEdge):
+    ...
+```

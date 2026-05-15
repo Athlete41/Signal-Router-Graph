@@ -1,9 +1,9 @@
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
 from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
-from qtpy.QtWidgets import QGraphicsView
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
+from conn_scene import ConnScene
 from nodeeditor.node_editor_widget import NodeEditorWidget
 from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_SQUARE
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
@@ -16,6 +16,8 @@ DEBUG_CONTEXT = False
 
 
 class ConnSubWindow(NodeEditorWidget):
+    Scene_class = ConnScene
+
     def __init__(self):
         super().__init__()
         # self.setAttribute(Qt.WA_DeleteOnClose)
