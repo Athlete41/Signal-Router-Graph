@@ -1,12 +1,12 @@
 from qtpy.QtGui import QPixmap, QIcon, QDrag
 from qtpy.QtCore import QSize, Qt, QByteArray, QDataStream, QMimeData, QIODevice, QPoint
-from qtpy.QtWidgets import QTreeWidget, QAbstractItemView, QTreeWidgetItem, QWidget, QVBoxLayout, QPushButton, QHBoxLayout
+from qtpy.QtWidgets import QTreeWidget, QAbstractItemView, QTreeWidgetItem, QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QLabel
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
 from nodeeditor.utils import dumpException
 
 
-class QDMDragTreeboxPanel(QWidget):
+class QDMNodesPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.initUI()
@@ -16,12 +16,14 @@ class QDMDragTreeboxPanel(QWidget):
         layout_btn = QHBoxLayout(self)
         expandAll_btn = QPushButton("展开全部", self)
         collapseAll_btn = QPushButton("收起全部", self)
-        self.treebox = QDMDragTreebox(self)
+        self.treebox = QDMNodeTreebox(self)
+        self.title = QLabel("节点创建", self)
 
         self.setLayout(layout)
         layout_btn.addWidget(expandAll_btn)
         layout_btn.addWidget(collapseAll_btn)
-        
+
+        layout.addWidget(self.title)
         layout.addLayout(layout_btn)
         layout.addWidget(self.treebox)
 
@@ -29,7 +31,7 @@ class QDMDragTreeboxPanel(QWidget):
         collapseAll_btn.clicked.connect(self.treebox.collapseAll)
 
 
-class QDMDragTreebox(QTreeWidget):
+class QDMNodeTreebox(QTreeWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.item_map = {}

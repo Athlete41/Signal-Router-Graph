@@ -1,6 +1,6 @@
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
-from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
+from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu, QGraphicsView
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
 from conn_scene import ConnScene
@@ -18,7 +18,7 @@ DEBUG_CONTEXT = False
 class ConnSubWindow(NodeEditorWidget):
     Scene_class = ConnScene
 
-    def __init__(self):
+    def __init__(self, viewportUpdateMode=QGraphicsView.FullViewportUpdate):
         super().__init__()
         # self.setAttribute(Qt.WA_DeleteOnClose)
 
@@ -32,12 +32,12 @@ class ConnSubWindow(NodeEditorWidget):
         self.scene.addDropListener(self.onDrop)
         self.scene.setNodeClassSelector(self.getNodeClassFromData)
 
-        # TODO 需要添加一种机制用于运行时切换更新频率
-        # self.view.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
-        logger.warning(f"记得完成 setViewportUpdateMode 的机制, 当前值为 {self.view.viewportUpdateMode()}")
-        SimpleLogger.instance().warning(f"记得完成 setViewportUpdateMode 的机制, 当前值为 {self.view.viewportUpdateMode()}")
+        self.setViewportUpdateMode(viewportUpdateMode)
 
         self._close_event_listeners = []
+
+    def setViewportUpdateMode(self, mode):
+        self.view.setViewportUpdateMode(mode)
 
     def getNodeClassFromData(self, data):
         if 'tppath' not in data: return Node

@@ -1,12 +1,12 @@
 import os
 from qtpy.QtGui import QIcon, QKeySequence
-from qtpy.QtWidgets import QMdiArea, QWidget, QDockWidget, QAction, QMessageBox, QFileDialog
+from qtpy.QtWidgets import QMdiArea, QWidget, QDockWidget, QAction, QMessageBox, QFileDialog, QGraphicsView
 from qtpy.QtCore import Qt, QSignalMapper
 
 from nodeeditor.utils import loadStylesheets
 from nodeeditor.node_editor_window import NodeEditorWindow
 from conn_sub_window import ConnSubWindow
-from conn_node_panel import QDMDragTreeboxPanel
+from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES, VERSION
 from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
@@ -32,6 +32,7 @@ class ConnectionWindow(NodeEditorWindow):
         )
 
         self.empty_icon = QIcon(".")
+        self.current_viewportUpdateMode = QGraphicsView.FullViewportUpdate
 
         SimpleLogger.instance()
 
@@ -49,7 +50,7 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.mdiArea.subWindowActivated.connect(self.updateMenus)
 
-        self.createNodesDock()
+        self.createToolPanelDock()
         self.createSimpleLoggerDock()
         self.createActions()
         self.createMenus()
@@ -122,7 +123,7 @@ class ConnectionWindow(NodeEditorWindow):
                         self.mdiArea.setActiveSubWindow(existing)
                     else:
                         # we need to create new subWindow and open the file
-                        nodeeditor = ConnSubWindow()
+                        nodeeditor = ConnSubWindow(viewportUpdateMode=self.current_viewportUpdateMode)
                         if nodeeditor.fileLoad(fname):
                             self.statusBar().showMessage("File %s loaded" % fname, 5000)
                             nodeeditor.setTitle()
@@ -168,6 +169,19 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.updateEditMenu()
 
+    def updateViewportUpdateMode(self, mode: int):
+        # print("update Menus")
+
+        windows = self.mdiArea.subWindowList()
+        for window in windows:
+            editor = window.widget()
+            if editor is None: continue
+            editor.setViewportUpdateMode(mode)
+
+        self.current_viewportUpdateMode = mode
+        logger.info(f"设置视口更新模式为 {mode}")
+        SimpleLogger.instance().info(f"设置视口更新模式为 {mode}")
+
     def updateEditMenu(self):
         try:
             # print("update Edit Menu")
@@ -189,10 +203,10 @@ class ConnectionWindow(NodeEditorWindow):
     def updateWindowMenu(self):
         self.windowMenu.clear()
 
-        toolbar_nodes = self.windowMenu.addAction("节点面板")
+        toolbar_nodes = self.windowMenu.addAction("工具面板")
         toolbar_nodes.setCheckable(True)
         toolbar_nodes.triggered.connect(self.onWindowNodesToolbar)
-        toolbar_nodes.setChecked(self.nodesDock.isVisible())
+        toolbar_nodes.setChecked(self.toolPanelDock.isVisible())
 
         toolbar_simpleLogger = self.windowMenu.addAction("简单日志面板")
         toolbar_simpleLogger.setCheckable(True)
@@ -228,10 +242,10 @@ class ConnectionWindow(NodeEditorWindow):
         #     self.windowMapper.setMapping(action, window)
 
     def onWindowNodesToolbar(self):
-        if self.nodesDock.isVisible():
-            self.nodesDock.hide()
+        if self.toolPanelDock.isVisible():
+            self.toolPanelDock.hide()
         else:
-            self.nodesDock.show()
+            self.toolPanelDock.show()
 
     def onWindowSimpleLoggerToolbar(self):
         if self.simpleLoggerDock.isVisible():
@@ -242,14 +256,15 @@ class ConnectionWindow(NodeEditorWindow):
     def createToolBars(self):
         pass
 
-    def createNodesDock(self):
-        self.nodesListWidget = QDMDragTreeboxPanel()
+    def createToolPanelDock(self):
+        self.toolPanel = QDMToolPanel()
+        self.toolPanel.viewSettingPanel.modeChanged.connect(self.updateViewportUpdateMode)
 
-        self.nodesDock = QDockWidget("节点面板")
-        self.nodesDock.setWidget(self.nodesListWidget)
-        self.nodesDock.setFloating(False)
+        self.toolPanelDock = QDockWidget("工具面板")
+        self.toolPanelDock.setWidget(self.toolPanel)
+        self.toolPanelDock.setFloating(False)
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.nodesDock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.toolPanelDock)
 
     def createSimpleLoggerDock(self):
         self.simpleLoggerBrowser = SimpleLoggerBrowser()
@@ -266,7 +281,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.statusBar().showMessage("Ready")
 
     def createMdiChild(self, child_widget=None):
-        nodeeditor = child_widget if child_widget is not None else ConnSubWindow()
+        nodeeditor = child_widget if child_widget is not None else ConnSubWindow(viewportUpdateMode=self.current_viewportUpdateMode)
         subwnd = self.mdiArea.addSubWindow(nodeeditor)
         subwnd.setWindowIcon(self.empty_icon)
         # nodeeditor.scene.addItemSelectedListener(self.updateEditMenu)
