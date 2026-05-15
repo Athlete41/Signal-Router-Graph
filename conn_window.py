@@ -134,8 +134,8 @@ class ConnectionWindow(NodeEditorWindow):
 
 
     def about(self):
-        QMessageBox.about(self, "关于连接节点编辑器示例",
-                "无介绍")
+        QMessageBox.about(self, "关于连接图编辑器",
+                "改造自 nodeeditor 下的 example_calculator, 与其不同的是, 此编辑器运行逻辑依赖于信号的连接, 而不是直接在节点上执行计算, 这是为实时性而准备的。")
 
     def createMenus(self):
         super().createMenus()
