@@ -119,66 +119,58 @@ class ConnNode(Node):
         pass
 
     def onEdgeConnectionChanged(self, new_edge):
+        """删除时假设槽的生命周期 = slot_owner.content 的生命周期"""
+
         start_socket = new_edge.start_socket
         end_socket = new_edge.end_socket
         
         isConnectAction = start_socket is not None and end_socket is not None
-        isDisconnectAction = not isConnectAction
 
         if isConnectAction:
-            output_socket = start_socket if start_socket.is_output else end_socket
-            input_socket = end_socket if start_socket.is_output else start_socket
+            try:
+                output_socket = start_socket if start_socket.is_output else end_socket
+                input_socket = end_socket if start_socket.is_output else start_socket
 
-            # 由信号提供者完成连接
-            if output_socket.node is self:
-                signal_owner = output_socket.node
-                signal_key = self.getSlotKeyBySocket(output_socket)
-                slot_owner = input_socket.node
-                slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
+                # 由信号提供者完成连接
+                if output_socket.node is self:
+                    signal_owner = output_socket.node
+                    signal_key = self.getSignalKeyBySocket(output_socket)
+                    slot_owner = input_socket.node
+                    slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
 
+                    signal = self.getSignal(signal_key)
+                    slot = slot_owner.getSlot(slot_key)
 
-                isError = signal_key is None or slot_key is None
-                if isError: 
-                    easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接失败")
-                    new_edge.markError()
+                    signal.connect(slot, Qt.QueuedConnection)
+                    new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
+
+                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接成功")
+            except Exception as e:
+                easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 创建连接失败:")
+                easyError(e)
+                new_edge.markError()
+        else:
+            try:
+                if new_edge.isError():
                     return
-                
-                signal = self._signals.get(signal_key, None)
-                slot = slot_owner._slots.get(slot_key, None)
 
-                isError = signal is None or slot is None
-                if isError: 
-                    new_edge.markError()
+                signal_owner, signal_key, slot_owner, slot_key = new_edge.getConnInfo()
+                if signal_owner is not self:
                     return
 
-                signal.connect(slot, Qt.QueuedConnection)
-                new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
+                signal = self.getSignal(signal_key)
+                slot = slot_owner.getSlot(slot_key)
+                new_edge.clearConnInfo()
 
-                easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接成功")
+                # 检查槽提供者是否已删除, 假设槽提供者的生命周期 = slot_owner.content 的生命周期
+                if not sip.isdeleted(slot_owner.content):
+                    signal = self._signals.get(signal_key, None)
+                    signal.disconnect(slot)
 
-        if isDisconnectAction:
-            if new_edge.isError():
-                return
-
-            signal_owner, signal_key, slot_owner, slot_key = new_edge.getConnInfo()
-            if signal_owner is not self:
-                return
-
-            signal = self._signals.get(signal_key, None)
-            slot = slot_owner._slots.get(slot_key, None)
-            new_edge.clearConnInfo()
-
-            if sip.isdeleted(slot_owner.content):
-                easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 槽提供者 {slot_owner}, 键:{slot_key} 已被删除")
-            else:
-                signal = self._signals.get(signal_key, None)
-                if signal is None:
-                    easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} 未注册, 无法断开连接")
-                    return
-     
-                signal.disconnect(slot)
-
-
+            except Exception as e:
+                easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 断开连接失败:")
+                easyError(e)
+                # new_edge.markError()
 
 
 
@@ -187,13 +179,8 @@ class ConnNode(Node):
         try:
             idx = self.inputs.index(socket)
             return self.inputBinds[idx]
-        except (ValueError, IndexError) as e:
-            if isinstance(e, IndexError):
-                easyError(f"{self.__class__.__name__}.getSlotKey: 未能找到输入绑定的槽键, 端口索引:{idx}")
-            elif isinstance(e, ValueError):
-                easyError(f"{self.__class__.__name__}.getSlotKey: 内部错误: {e}")
-            return None
-
+        except IndexError:
+            raise IndexError(f"{self.__class__.__name__} 未能找到输入绑定的槽键, 端口索引:{idx}, 检查 inputBinds 是否正确")
         
 
     def getSignalKeyBySocket(self, socket) -> str| None:
@@ -201,18 +188,20 @@ class ConnNode(Node):
         try:
             idx = self.outputs.index(socket)
             return self.outputBinds[idx]
-        except (ValueError, IndexError) as e:
-            if isinstance(e, IndexError):
-                easyError(f"{self.__class__.__name__}.getSignalKey: 未能找到输出绑定的信号键, 端口索引:{idx}")
-            elif isinstance(e, ValueError):
-                easyError(f"{self.__class__.__name__}.getSignalKey: 内部错误: {e}")
-            return None
+        except IndexError:
+            raise IndexError(f"{self.__class__.__name__} 未能找到输出绑定的信号键, 端口索引:{idx}, 检查 outputBinds 是否正确")
 
     def getSlot(self, key) -> "function":
-        return self._slots.get(key, None)
+        if key not in self._slots:
+            raise KeyError(f"{self.__class__.__name__} 未能找到槽键: {key}")
+        
+        return self._slots.get(key)
 
     def getSignal(self, key) -> "pyqtSignal":
-        return self._signals.get(key, None)
+        if key not in self._signals:
+            raise KeyError(f"{self.__class__.__name__} 未能找到信号键: {key}")
+        
+        return self._signals.get(key)
 
 
     def serialize(self):
