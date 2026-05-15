@@ -2,6 +2,8 @@ import logging
 import logging.handlers
 from pathlib import Path
 import queue
+import typing
+import types
 
 
 LEVEL = logging.DEBUG
@@ -79,6 +81,58 @@ class SimpleLoggerBrowser(QTextBrowser):
         self.moveCursor(QTextCursor.MoveOperation.End)
         self.insertPlainText(msg + "\n")
 
+def easyInfo(msg: str) -> None:
+    SimpleLogger.instance().info(msg)
+    logger.info(msg)
+
+def easyError(msg: typing.Union[str, Exception])  -> None:
+    SimpleLogger.instance().error(msg)
+    if isinstance(msg, Exception):
+        logger.error(msg, exc_info=True)
+    else:
+        logger.error(msg)
+
+def easyWarning(msg: str) -> None:
+    SimpleLogger.instance().warning(msg)
+    logger.warning(msg)
+
+def easyDebug(msg: str) -> None:
+    SimpleLogger.instance().debug(msg)
+    logger.debug(msg)
+
+def easyMsg(msg: str) -> None:
+    SimpleLogger.instance().msg(msg)
+
+
+
+
+def disconnect_all(signal, slot=None):
+    """基于 PyQt5.15.9 版本"""
+    depth = 0
+    if slot is not None:
+        while True:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                break
+
+            # 一般不可能
+            depth += 1
+            if depth > 100: 
+                easyWarning("深度超过100! 检测 Qt 是否为 PyQt5.15.9 版本")
+                break
+    else:
+        signal.disconnect()
+
+
+def is_real_signal(obj):
+    return callable(getattr(obj, 'connect')) and callable(getattr(obj, 'disconnect')) and callable(getattr(obj, 'emit'))
+
+def is_qobject_instance_method(method):
+    if isinstance(method, types.MethodType):
+        instance = method.__self__
+        return isinstance(instance, QObject)
+    return False
 
 if __name__ == "__main__":
     logger.error("这是一条错误日志", exc_info=True)

@@ -1,6 +1,6 @@
 from conn_conf import register_node, set_node_display
 from conn_node_base import ConnNode, ConnGraphicsNode
-from logger import SimpleLogger, LEVEL, logging
+from utils import SimpleLogger, LEVEL, logging
 
 if LEVEL <= logging.DEBUG:
     @register_node(("测试目录", "测试子目录", "测试节点1"))
@@ -13,7 +13,7 @@ if LEVEL <= logging.DEBUG:
         conn_title = "测试节点1的标题"
 
         def __init__(self, scene):
-            super().__init__(scene, inputs=[], outputs=[1])
+            super().__init__(scene, inputs=[1,], outputs=[2,3])
             SimpleLogger.instance().info("测试节点1创建成功！")
 
         def initInnerClasses(self):
@@ -41,7 +41,7 @@ if LEVEL <= logging.DEBUG:
         conn_title = "测试节点2的标题"
 
         def __init__(self, scene):
-            super().__init__(scene, inputs=[1], outputs=[])
+            super().__init__(scene, inputs=["slotx"], outputs=[])
             SimpleLogger.instance().info("测试节点2创建成功！")
 
         def initInnerClasses(self):

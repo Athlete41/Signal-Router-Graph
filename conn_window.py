@@ -9,7 +9,7 @@ from conn_sub_window import ConnSubWindow
 from conn_drag_treebox import QDMDragTreeboxPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES
-from logger import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
+from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
 
 
 # images for the dark skin
