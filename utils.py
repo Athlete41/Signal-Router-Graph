@@ -125,10 +125,10 @@ def disconnect_all(signal, slot=None):
         signal.disconnect()
 
 
-def is_real_signal(obj):
+def isRealSignal(obj):
     return callable(getattr(obj, 'connect')) and callable(getattr(obj, 'disconnect')) and callable(getattr(obj, 'emit'))
 
-def is_qobject_instance_method(method):
+def isQObjectInstanceMethod(method):
     if isinstance(method, types.MethodType):
         instance = method.__self__
         return isinstance(instance, QObject)
