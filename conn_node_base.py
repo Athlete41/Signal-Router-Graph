@@ -166,7 +166,10 @@ class ConnNode(Node):
                 if not sip.isdeleted(slot_owner.content):
                     signal = self._signals.get(signal_key, None)
                     signal.disconnect(slot)
-
+                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽提供者 {slot_owner.__class__.__name__}, 键:\"{slot_key}\" 断开连接成功")
+                else:
+                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽键:\"{slot_key}\" 断开连接成功, 槽提供者已删除")
+            
             except Exception as e:
                 easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 断开连接失败:")
                 easyError(e)
