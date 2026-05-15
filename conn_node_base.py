@@ -1,9 +1,7 @@
 from qtpy.QtGui import QImage
 from qtpy.QtCore import QRectF
-from qtpy.QtWidgets import QLabel
 
 from nodeeditor.node_node import Node
-from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
 from logger import SimpleLogger, logger
@@ -12,7 +10,7 @@ from logger import SimpleLogger, logger
 class ConnGraphicsNode(QDMGraphicsNode):
     def initSizes(self):
         super().initSizes()
-        self.width = 160
+        self.width = 320
         self.height = 74
         self.edge_roundness = 6
         self.edge_padding = 0
@@ -48,7 +46,6 @@ class ConnNode(Node):
     conn_title = "未定义的标题"
 
     GraphicsNode_class = ConnGraphicsNode
-    NodeContent_class = QDMNodeContentWidget
 
     def __init__(self, scene, inputs=[2,2], outputs=[1]):
         super().__init__(scene, self.__class__.conn_title, inputs, outputs)
