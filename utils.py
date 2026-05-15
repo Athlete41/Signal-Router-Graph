@@ -39,7 +39,6 @@ logger, listener = _setup_logger(log_file)
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from qtpy.QtWidgets import QTextBrowser
-from qtpy.QtGui import QTextCursor
 
 class SimpleLogger(QObject):
     """
@@ -63,23 +62,22 @@ class SimpleLogger(QObject):
 
     def error(self, msg: str) -> None:
         if LEVEL <= logging.ERROR:
-            self.newNotify.emit(f"[错误]: {msg}")
+            self.newNotify.emit(f"<span style=\"color: red;\">[错误]: {msg}</span>")
 
     def warning(self, msg: str) -> None:
         if LEVEL <= logging.WARNING:
-            self.newNotify.emit(f"[警告]: {msg}")
+            self.newNotify.emit(f"<span style=\"color: orange;\">[警告]: {msg}</span>")
 
     def debug(self, msg: str) -> None:
         if LEVEL <= logging.DEBUG:
-            self.newNotify.emit(f"[调试]: {msg}")
+            self.newNotify.emit(f"<span style=\"color: lightgreen;\">[调试]: {msg}</span>")
 
     def msg(self, msg: str) -> None:
         self.newNotify.emit(msg)
 
 class SimpleLoggerBrowser(QTextBrowser):
     def updateNewMsg(self, msg: str) -> None:
-        self.moveCursor(QTextCursor.MoveOperation.End)
-        self.insertPlainText(msg + "\n")
+        self.append(msg)
 
 def easyInfo(msg: str) -> None:
     SimpleLogger.instance().info(msg)
