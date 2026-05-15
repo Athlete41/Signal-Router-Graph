@@ -8,7 +8,7 @@ from nodeeditor.node_editor_window import NodeEditorWindow
 from conn_sub_window import ConnSubWindow
 from conn_drag_treebox import QDMDragTreeboxPanel
 from nodeeditor.utils import dumpException, pp
-from conn_conf import CONN_NODES
+from conn_conf import CONN_NODES, VERSION
 from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
 
 
@@ -135,7 +135,7 @@ class ConnectionWindow(NodeEditorWindow):
 
     def about(self):
         QMessageBox.about(self, "关于连接图编辑器",
-                "改造自 nodeeditor 下的 example_calculator, 与其不同的是, 此编辑器运行逻辑依赖于信号的连接, 而不是直接在节点上执行计算, 这是为实时性而准备的。")
+                f"改造自 nodeeditor 下的 example_calculator, 与其不同的是, 此编辑器运行逻辑依赖于信号的连接, 而不是直接在节点上执行计算, 这是为实时性而准备的。\n版本: {VERSION}")
 
     def createMenus(self):
         super().createMenus()

@@ -1,5 +1,6 @@
 LISTBOX_MIMETYPE = "application/x-item"
 
+VERSION = "1.0.0"
 
 CONN_NODES: dict[tuple[str], type] = {
 }
