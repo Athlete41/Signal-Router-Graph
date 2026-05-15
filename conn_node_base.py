@@ -86,24 +86,24 @@ class ConnNode(Node):
 
     def registerSignal(self, key, signal):
         if not isRealSignal(signal):
-            easyError(f"{self.__class__.__name__} 实例注册信号键: {key} 时, 信号对象不是 Qt 信号对象")
+            easyError(f"{self.__class__.__name__} 实例注册信号键: \"{key}\" 时, 信号对象不是 Qt 信号对象")
             return
 
         if key in self._signals and self._signals[key] != signal:
-            easyWarning(f"{self.__class__.__name__} 实例重复注册信号键: {key}, 将覆盖已注册信号")
+            easyWarning(f"{self.__class__.__name__} 实例重复注册信号键: \"{key}\" 将覆盖已注册信号")
 
         self._signals[key] = signal
 
     def registerSlot(self, key, slot):
         if not callable(slot):
-            easyError(f"{self.__class__.__name__} 实例注册槽键: {key} 时, 槽函数对象不是可调用对象")
+            easyError(f"{self.__class__.__name__} 实例注册槽键: \"{key}\" 时, 槽函数对象不是可调用对象")
             return
         
         if not isQObjectInstanceMethod(slot):
-            easyWarning(f"{self.__class__.__name__} 实例注册槽键: {key} 时, 槽函数对象不是 QObject 实例方法")
+            easyWarning(f"{self.__class__.__name__} 实例注册槽键: \"{key}\" 时, 槽函数对象可能不是 QObject 实例方法")
         
         if key in self._slots and self._slots[key] != slot:
-            easyWarning(f"{self.__class__.__name__} 实例重复注册槽键: {key}, 将覆盖已注册槽函数")
+            easyWarning(f"{self.__class__.__name__} 实例重复注册槽键: \"{key}\" 将覆盖已注册槽函数")
 
         self._slots[key] = slot
 
@@ -144,7 +144,7 @@ class ConnNode(Node):
                     signal.connect(slot, Qt.QueuedConnection)
                     new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
 
-                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接成功")
+                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽提供者 {slot_owner.__class__.__name__}, 键:\"{slot_key}\" 连接成功")
             except Exception as e:
                 easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 创建连接失败:")
                 easyError(e)
@@ -193,13 +193,13 @@ class ConnNode(Node):
 
     def getSlot(self, key) -> "function":
         if key not in self._slots:
-            raise KeyError(f"{self.__class__.__name__} 未能找到槽键: {key}")
+            raise KeyError(f"{self.__class__.__name__} 未能找到槽键: \"{key}\"")
         
         return self._slots.get(key)
 
     def getSignal(self, key) -> "pyqtSignal":
         if key not in self._signals:
-            raise KeyError(f"{self.__class__.__name__} 未能找到信号键: {key}")
+            raise KeyError(f"{self.__class__.__name__} 未能找到信号键: \"{key}\"")
         
         return self._signals.get(key)
 

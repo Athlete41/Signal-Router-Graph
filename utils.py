@@ -127,10 +127,7 @@ def isRealSignal(obj):
     return callable(getattr(obj, 'connect')) and callable(getattr(obj, 'disconnect')) and callable(getattr(obj, 'emit'))
 
 def isQObjectInstanceMethod(method):
-    if isinstance(method, types.MethodType):
-        instance = method.__self__
-        return isinstance(instance, QObject)
-    return False
+    return hasattr(method, '__self__') and isinstance(method.__self__, QObject)
 
 if __name__ == "__main__":
     logger.error("这是一条错误日志", exc_info=True)
