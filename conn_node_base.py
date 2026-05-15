@@ -1,5 +1,6 @@
 from qtpy.QtGui import QImage
 from qtpy.QtCore import QRectF, Qt
+from qtpy import sip
 
 from nodeeditor.node_socket import Socket
 from nodeeditor.node_graphics_socket import QDMGraphicsSocket
@@ -7,7 +8,7 @@ from nodeeditor.node_node import Node
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
-from utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod
+from utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod, disconnect_all
 
 
 class ConnGraphicsNode(QDMGraphicsNode):
@@ -135,7 +136,7 @@ class ConnNode(Node):
                 slot_owner = input_socket.node
                 slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
 
-                
+
                 isError = signal_key is None or slot_key is None
                 if isError: 
                     easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接失败")
@@ -151,15 +152,32 @@ class ConnNode(Node):
                     return
 
                 signal.connect(slot, Qt.QueuedConnection)
+                new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
+
                 easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接成功")
 
-
-                               
-
-
         if isDisconnectAction:
-            ...
-            
+            if new_edge.isError():
+                return
+
+            signal_owner, signal_key, slot_owner, slot_key = new_edge.getConnInfo()
+            if signal_owner is not self:
+                return
+
+            signal = self._signals.get(signal_key, None)
+            slot = slot_owner._slots.get(slot_key, None)
+            new_edge.clearConnInfo()
+
+            if sip.isdeleted(slot_owner.content):
+                easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 槽提供者 {slot_owner}, 键:{slot_key} 已被删除")
+            else:
+                signal = self._signals.get(signal_key, None)
+                if signal is None:
+                    easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} 未注册, 无法断开连接")
+                    return
+     
+                signal.disconnect(slot)
+
 
 
 
@@ -190,7 +208,11 @@ class ConnNode(Node):
                 easyError(f"{self.__class__.__name__}.getSignalKey: 内部错误: {e}")
             return None
 
+    def getSlot(self, key) -> "function":
+        return self._slots.get(key, None)
 
+    def getSignal(self, key) -> "pyqtSignal":
+        return self._signals.get(key, None)
 
 
     def serialize(self):

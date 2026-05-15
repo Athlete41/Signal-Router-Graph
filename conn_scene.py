@@ -59,18 +59,39 @@ class ConnEdge(Edge):
 
     def __init__(self, scene, start_socket = None, end_socket = None, edge_type=...):
         super().__init__(scene, start_socket, end_socket, edge_type)
-        self.signal_owner = None
-        self.signal_key = None
+        self._signal_owner = None
+        self._signal_key = None
 
-        self.slot_owner = None
-        self.slot_key = None
+        self._slot_owner = None
+        self._slot_key = None
+
+        self._is_error = False
+        self._connect_type = Qt.AutoConnection
 
     def getGraphicsEdgeClass(self):
         return ConnGraphicsEdge
     
+    def setConnInfo(self, signal_owner, signal_key, slot_owner, slot_key):
+        self._signal_owner = signal_owner
+        self._signal_key = signal_key
+        self._slot_owner = slot_owner
+        self._slot_key = slot_key
+
+    def getConnInfo(self):
+        return self._signal_owner, self._signal_key, self._slot_owner, self._slot_key
+    
+    def clearConnInfo(self):
+        self._signal_owner = None
+        self._signal_key = None
+        self._slot_owner = None
+        self._slot_key = None
+
     def markError(self):
+        self._is_error = True
         self.grEdge.changeColor(Qt.red)
 
+    def isError(self):
+        return self._is_error
 
 class ConnScene(Scene):
     def getEdgeClass(self):
