@@ -20,8 +20,6 @@ class ConnGraphicsEdge(QDMGraphicsEdge):
         # ---- 箭头相关参数 ----
         self._arrow_size = 12.0         
         self._arrow_width = 12
-        self._arrow_offset_percent = 1
-
         self._arrow_color = Qt.white
 
 
@@ -36,11 +34,9 @@ class ConnGraphicsEdge(QDMGraphicsEdge):
         if path.isEmpty():
             return
 
-        percent = self._arrow_offset_percent
-        if percent >= 1.0:
-            percent = 0.92
+        percent = 0.08 if self.edge.end_socket.is_output else 0.92
         arrow_pos = path.pointAtPercent(percent)
-        angle = path.angleAtPercent(percent)
+        angle = path.angleAtPercent(percent) + (180 if self.edge.end_socket.is_output else 0)
 
         triangle = QPolygonF([
             QPointF(self._arrow_size, 0),
@@ -61,8 +57,20 @@ class ConnEdge(Edge):
     # 使用独立的 edge_validators 列表，避免与父类的冲突
     edge_validators = [] 
 
+    def __init__(self, scene, start_socket = None, end_socket = None, edge_type=...):
+        super().__init__(scene, start_socket, end_socket, edge_type)
+        self.signal_owner = None
+        self.signal_key = None
+
+        self.slot_owner = None
+        self.slot_key = None
+
     def getGraphicsEdgeClass(self):
         return ConnGraphicsEdge
+    
+    def markError(self):
+        self.grEdge.changeColor(Qt.red)
+
 
 class ConnScene(Scene):
     def getEdgeClass(self):
@@ -70,7 +78,7 @@ class ConnScene(Scene):
 
 
 
-ConnEdge.registerEdgeValidator(edge_validator_debug)
+# ConnEdge.registerEdgeValidator(edge_validator_debug)
 ConnEdge.registerEdgeValidator(edge_cannot_connect_two_outputs_or_two_inputs)
 # ConnEdge.registerEdgeValidator(edge_cannot_connect_input_and_output_of_same_node)
 

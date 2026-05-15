@@ -1,5 +1,5 @@
 from qtpy.QtGui import QImage
-from qtpy.QtCore import QRectF
+from qtpy.QtCore import QRectF, Qt
 
 from nodeeditor.node_socket import Socket
 from nodeeditor.node_graphics_socket import QDMGraphicsSocket
@@ -7,7 +7,7 @@ from nodeeditor.node_node import Node
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
-from utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg
+from utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod
 
 
 class ConnGraphicsNode(QDMGraphicsNode):
@@ -67,20 +67,44 @@ class ConnNode(Node):
         outputBinds=[],
     ):
         self._signals = {}
+        self._slots = {}
         if len(inputBinds) != len(inputs):
-            easyError(f"{self.__class__.__name__}::__init__ 输入绑定数量与输入数量不匹配")
+            easyError(f"{self.__class__.__name__}.__init__ 输入绑定数量与输入数量不匹配")
         if len(outputBinds) != len(outputs):
-            easyError(f"{self.__class__.__name__}::__init__ 输出绑定数量与输出数量不匹配")
+            easyError(f"{self.__class__.__name__}.__init__ 输出绑定数量与输出数量不匹配")
+        if any(not isinstance(key, str) or key.strip() == "" for key in inputBinds):
+            easyError(f"{self.__class__.__name__}.__init__ 输入绑定键必须是非空字符串")
+        if any(not isinstance(key, str) or key.strip() == "" for key in outputBinds):
+            easyError(f"{self.__class__.__name__}.__init__ 输出绑定键必须是非空字符串")
+
+        self.inputBinds = inputBinds
+        self.outputBinds = outputBinds
 
         super().__init__(scene, self.__class__.conn_title, inputs, outputs)
 
 
     def registerSignal(self, key, signal):
-        if key not in self._signals:
-            self._signals[key] = signal
-        else:
-            easyWarning(f"{self.__class__.__name__} 实例重复注册信号键: {key}")
+        if not isRealSignal(signal):
+            easyError(f"{self.__class__.__name__} 实例注册信号键: {key} 时, 信号对象不是 Qt 信号对象")
+            return
 
+        if key in self._signals and self._signals[key] != signal:
+            easyWarning(f"{self.__class__.__name__} 实例重复注册信号键: {key}, 将覆盖已注册信号")
+
+        self._signals[key] = signal
+
+    def registerSlot(self, key, slot):
+        if not callable(slot):
+            easyError(f"{self.__class__.__name__} 实例注册槽键: {key} 时, 槽函数对象不是可调用对象")
+            return
+        
+        if not isQObjectInstanceMethod(slot):
+            easyWarning(f"{self.__class__.__name__} 实例注册槽键: {key} 时, 槽函数对象不是 QObject 实例方法")
+        
+        if key in self._slots and self._slots[key] != slot:
+            easyWarning(f"{self.__class__.__name__} 实例重复注册槽键: {key}, 将覆盖已注册槽函数")
+
+        self._slots[key] = slot
 
     def initSettings(self):
         super().initSettings()
@@ -94,17 +118,79 @@ class ConnNode(Node):
         pass
 
     def onEdgeConnectionChanged(self, new_edge):
-        easyDebug("%s::__onEdgeConnectionChanged" % self.__class__.__name__)
+        start_socket = new_edge.start_socket
+        end_socket = new_edge.end_socket
+        
+        isConnectAction = start_socket is not None and end_socket is not None
+        isDisconnectAction = not isConnectAction
 
-        if new_edge.start_socket is not None and new_edge.end_socket is not None:
-            easyDebug(f"创建边, 输入节点: {new_edge.start_socket.node}, 输出节点: {new_edge.end_socket.node}")
+        if isConnectAction:
+            output_socket = start_socket if start_socket.is_output else end_socket
+            input_socket = end_socket if start_socket.is_output else start_socket
 
-            if new_edge.start_socket.node is self:
-                easyDebug(f"端口索引: {self.outputs.index(new_edge.start_socket)}")
-        else:
-            easyDebug(f"删除边, 输入端口: {new_edge.start_socket}, 输出端口: {new_edge.end_socket}")
+            # 由信号提供者完成连接
+            if output_socket.node is self:
+                signal_owner = output_socket.node
+                signal_key = self.getSignalKey(output_socket)
+                slot_owner = input_socket.node
+                slot_key = input_socket.node.getSlotKey(input_socket)
 
-        return super().onEdgeConnectionChanged(new_edge)
+                
+                isError = signal_key is None or slot_key is None
+                if isError: 
+                    easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接失败")
+                    new_edge.markError()
+                    return
+                
+                signal = self._signals.get(signal_key, None)
+                slot = slot_owner._slots.get(slot_key, None)
+
+                isError = signal is None or slot is None
+                if isError: 
+                    new_edge.markError()
+                    return
+
+                signal.connect(slot, Qt.QueuedConnection)
+                easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号提供者 {signal_owner}, 键:{signal_key} --> 槽提供者 {slot_owner}, 键:{slot_key} 连接成功")
+
+
+                               
+
+
+        if isDisconnectAction:
+            ...
+            
+
+
+
+
+    def getSlotKey(self, socket) -> str| None:
+        idx = None
+        try:
+            idx = self.inputs.index(socket)
+            return self.inputBinds[idx]
+        except (ValueError, IndexError) as e:
+            if isinstance(e, IndexError):
+                easyError(f"{self.__class__.__name__}.getSlotKey: 未能找到输入绑定的槽键, 端口索引:{idx}")
+            elif isinstance(e, ValueError):
+                easyError(f"{self.__class__.__name__}.getSlotKey: 内部错误: {e}")
+            return None
+
+        
+
+    def getSignalKey(self, socket) -> str| None:
+        idx = None
+        try:
+            idx = self.outputs.index(socket)
+            return self.outputBinds[idx]
+        except (ValueError, IndexError) as e:
+            if isinstance(e, IndexError):
+                easyError(f"{self.__class__.__name__}.getSignalKey: 未能找到输出绑定的信号键, 端口索引:{idx}")
+            elif isinstance(e, ValueError):
+                easyError(f"{self.__class__.__name__}.getSignalKey: 内部错误: {e}")
+            return None
+
+
 
 
     def serialize(self):
@@ -114,6 +200,4 @@ class ConnNode(Node):
 
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
-
-        easyDebug("Deserialized ConnNode '%s'" % self.__class__.__name__)
         return res
