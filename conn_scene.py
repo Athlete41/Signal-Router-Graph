@@ -93,6 +93,18 @@ class ConnEdge(Edge):
     def isError(self):
         return self._is_error
 
+    def deserialize(self, data:dict, hashmap:dict={}, restore_id:bool=True, *args, **kwargs) -> bool:
+        """在这里完成重新连接操作"""
+        if restore_id: self.id = data['id']
+        self.start_socket = hashmap[data['start']]
+        self.end_socket = hashmap[data['end']]
+        self.edge_type = data['edge_type']
+
+        # 重新连接信号槽槽
+        self.start_socket.node.onEdgeConnectionChanged(self)
+        self.end_socket.node.onEdgeConnectionChanged(self)
+
+
 class ConnScene(Scene):
     def getEdgeClass(self):
         return ConnEdge
