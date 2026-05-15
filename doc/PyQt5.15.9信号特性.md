@@ -12,3 +12,6 @@ signal.emit(*args) 与 signal.connect(slot, connection_type=Qt.AutoConnection):
     详见 PyQt5.15.9 文档 与 ./test_emit.py 实测
     关于投递策略与执行, 调用 signal.connect 时会生成槽对象亲和线程的快照, 后续又会根据执行投递的线程来选择策略与执行，
     所以 `快照` 和 `投递线程` 很重要, 将以此对 SignalRelay 和 SignalDynamic 的行为进行分析
+
+
+官方文档链接: https://doc.qt.io/archives/qt-5.15/classes.html
