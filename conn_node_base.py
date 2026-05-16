@@ -99,9 +99,6 @@ class ConnSocket(Socket):
         self.grSocket._text_offset = 1 if self.position == LEFT_BOTTOM or self.position == LEFT_TOP or self.position == LEFT_CENTER else -1
 
 
-class ConnNodeContentWidget(QDMNodeContentWidget):
-    def __init__(self, node, parent = None):
-        super().__init__(node, parent)
 
 class ConnNode(Node):
     icon = ""
@@ -112,7 +109,6 @@ class ConnNode(Node):
     conn_title = "未定义的标题"
 
     GraphicsNode_class = ConnGraphicsNode
-    NodeContent_class = ConnNodeContentWidget
     Socket_class = ConnSocket
 
     def __init__(self, scene, 
