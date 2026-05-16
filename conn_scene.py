@@ -104,18 +104,19 @@ class ConnEdge(Edge):
             slot_owner = self._slot_owner
             slot_key = self._slot_key
 
+            if isdeleted(slot_owner.content):
+                raise RuntimeError("槽对象已删除失败")
+            
+            if isdeleted(signal_owner.content):
+                raise RuntimeError("信号对象已删除")
+
             signal = signal_owner.getSignal(signal_key)
             slot = slot_owner.getSlot(slot_key)
 
             signal.connect(slot, ctype)
 
-            self._signal_owner = signal_owner
-            self._signal_key = signal_key
-            self._slot_owner = slot_owner
-            self._slot_key = slot_key
-
             self._is_loaded = True
-            easyDebug(f"连接成功: 信号键:\"{signal_key}\" --> 键:\"{slot_key}\"")
+            easyDebug(f"连接成功: 信号键:\"{signal_key}\" --> 键:\"{slot_key}\", 类型 {ctype}")
             
             return True
         except Exception as e:

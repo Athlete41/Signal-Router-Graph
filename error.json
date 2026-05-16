@@ -1,0 +1,105 @@
+{
+    "id": 2421056612304,
+    "scene_width": 64000,
+    "scene_height": 64000,
+    "nodes": [
+        {
+            "id": 2421056798336,
+            "title": "\u5f02\u5e38-\u7ed1\u5b9a\u672a\u5bf9\u9f50",
+            "pos_x": 63.0,
+            "pos_y": -21.0,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 2421056883152,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u5f02\u5e38-\u7ed1\u5b9a\u672a\u5bf9\u9f50"
+            ]
+        },
+        {
+            "id": 2421056884976,
+            "title": "\u6587\u672c\u663e\u793a\u5668",
+            "pos_x": 429.0,
+            "pos_y": 36.0,
+            "inputs": [
+                {
+                    "id": 2421056885360,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u6587\u672c\u663e\u793a\u5668"
+            ]
+        },
+        {
+            "id": 1304373160464,
+            "title": "\u6587\u672c\u663e\u793a\u5668",
+            "pos_x": 481.24999999999994,
+            "pos_y": 273.43749999999994,
+            "inputs": [
+                {
+                    "id": 1304373160800,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u6587\u672c\u663e\u793a\u5668"
+            ]
+        },
+        {
+            "id": 1304373160992,
+            "title": "\u6587\u672c\u8f93\u5165\u5668",
+            "pos_x": 45.31249999999997,
+            "pos_y": 209.37499999999994,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 1304373161376,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u6587\u672c\u8f93\u5165\u5668"
+            ]
+        }
+    ],
+    "edges": [
+        {
+            "id": 2421056885024,
+            "edge_type": 5,
+            "start": 2421056883152,
+            "end": 2421056885360
+        },
+        {
+            "id": 1304373162000,
+            "edge_type": 5,
+            "start": 1304373161376,
+            "end": 1304373160800
+        }
+    ]
+}

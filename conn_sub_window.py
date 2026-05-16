@@ -44,6 +44,8 @@ class ConnSubWindow(NodeEditorWidget):
         SimpleLogger.instance().debug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
 
     def setConnectionType(self, ctype):
+        logger.debug(f"{self.filename} 窗口: 重连类型{ctype}")
+        SimpleLogger.instance().debug(f"{self.filename} 窗口: 重连类型 {ctype}")
         self.scene.reconnectAll(ctype)
 
     def getNodeClassFromData(self, data):
