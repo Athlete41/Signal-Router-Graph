@@ -259,7 +259,7 @@ class ConnectionWindow(NodeEditorWindow):
 
     def createToolPanelDock(self):
         self.toolPanel = QDMToolPanel()
-        self.toolPanel.viewSettingPanel.modeChanged.connect(self.updateViewportUpdateMode)
+        self.toolPanel.globalSettingPanel.modeChanged.connect(self.updateViewportUpdateMode)
 
         self.toolPanelDock = QDockWidget("工具面板")
         self.toolPanelDock.setWidget(self.toolPanel)

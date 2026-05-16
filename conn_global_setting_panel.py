@@ -6,7 +6,7 @@ from PyQt5.QtCore import pyqtSignal
 
 
 
-class QDMViewSettingPanel(QWidget):
+class QDMGlobalSettingPanel(QWidget):
     modeChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
