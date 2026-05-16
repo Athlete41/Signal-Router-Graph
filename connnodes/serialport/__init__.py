@@ -24,11 +24,11 @@ sendData (QByteArray)
         super().__init__(scene, 
             inputs=[1], 
             inputBinds=["sendData"],
-            inputDisplays=[ConnSocketDisplay(tooltip="槽参数: QByteArray", name="发送")],
+            inputDisplays=[ConnSocketDisplay(tooltip="槽参数: QByteArray", name="发送 (QByteArray)")],
 
             outputs=[2], 
             outputBinds=["received"],
-            outputDisplays=[ConnSocketDisplay(tooltip="信号参数: QByteArray, dict", name="数据")]
+            outputDisplays=[ConnSocketDisplay(tooltip="信号参数: QByteArray, dict", name="数据 (QByteArray, dict)")]
         )
         self.registerSignal("received", self.content.dataSource.received)
         self.registerSlot("sendData", self.content.dataSource.sendData)
