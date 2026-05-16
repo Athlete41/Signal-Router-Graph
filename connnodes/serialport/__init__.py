@@ -8,7 +8,7 @@ from conn_node_base import ConnNode, ConnSocketDisplay
 @register_node(("数据源", "串口"))
 class SerialPortNode(ConnNode):
     tppath = ("数据源", "串口")
-    icon = "icons/in.png"
+    icon = "icons/er.png"
     name = "串口"
     tooltip = """串口数据源:
 信号: 

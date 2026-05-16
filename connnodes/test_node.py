@@ -30,7 +30,7 @@ class Test_TextInputContent(QDMNodeContentWidget):
 @register_node(("测试", "文本输入器"))
 class Test_TextInputNode(ConnNode):
     tppath = ("测试", "文本输入器")
-    icon = "icons/in.png"
+    icon = "icons/emitter.png"
     name = "文本输入器"
     tooltip = "提供一个文本信号发送str类型"
     conn_title = "文本输入器"
@@ -65,7 +65,7 @@ class Test_TextShowContent(QDMNodeContentWidget):
 @register_node(("测试", "文本显示器"))
 class Test_TextShowNode(ConnNode):
     tppath = ("测试", "文本显示器")
-    icon = "icons/out.png"
+    icon = "icons/receiver.png"
     name = "文本显示器"
     tooltip = "提供一个槽接收str类型参数并显示"
     conn_title = "文本显示器"
