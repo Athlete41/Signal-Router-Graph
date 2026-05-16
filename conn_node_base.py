@@ -1,5 +1,7 @@
 from qtpy.QtGui import QImage
-from qtpy.QtCore import QRectF, Qt
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont, QFontMetrics
+
 from qtpy import sip
 
 from nodeeditor.node_socket import Socket
@@ -7,7 +9,7 @@ from nodeeditor.node_graphics_socket import QDMGraphicsSocket
 from nodeeditor.node_node import Node
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_content_widget import QDMNodeContentWidget
-from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
+from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER, LEFT_BOTTOM, LEFT_TOP, RIGHT_BOTTOM, RIGHT_TOP
 from utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod, disconnect_all
 
 
@@ -39,11 +41,63 @@ class ConnGraphicsNode(QDMGraphicsNode):
     #     )
 
 class ConnGraphicsSocket(QDMGraphicsSocket):
-    ...
+    def initAssets(self):
+        super().initAssets()
+
+        self._text = ""
+        self._text_offset = 1
+        self._text_font = QFont()
+        self._text_font.setPointSize(10)
+        self._text_metrics = QFontMetrics(self._text_font)
+        self._text_margin = 5
+
+    def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
+        super().paint(painter, QStyleOptionGraphicsItem, widget)
+       
+        painter.setFont(self._text_font)
+        painter.setPen(self._color_background)
+        
+        text_width = self._text_metrics.horizontalAdvance(self._text)
+
+        text_x = self.radius - ((text_width + 2 * self.radius if self._text_offset > 0 else 0) + self._text_margin * self._text_offset)
+        text_y = self.radius / 2   
+  
+        painter.drawText(int(text_x), int(text_y), self._text)
+
+
+    def setText(self, text):
+        self._text = text
+
+    def getText(self) -> str:
+        return self._text
+
+
+class ConnSocketDisplay:
+    def __init__(self, tooltip: str = "",
+        name: str = "",
+                 ):
+        self.tooltip = tooltip
+        self.name = name
 
 class ConnSocket(Socket):
     Socket_GR_Class = ConnGraphicsSocket
-    ...
+    
+    def setToolTip(self, tooltip):
+        self.grSocket.setToolTip(tooltip)
+
+    def toolTip(self) -> str:
+        return self.grSocket.toolTip()
+    
+    def setText(self, text):
+        self.grSocket.setText(text)
+
+    def text(self) -> str:
+        return self.grSocket.text()
+    
+    def setSocketPosition(self):
+        super().setSocketPosition()
+        self.grSocket._text_offset = 1 if self.position == LEFT_BOTTOM or self.position == LEFT_TOP or self.position == LEFT_CENTER else -1
+
 
 class ConnNodeContentWidget(QDMNodeContentWidget):
     def __init__(self, node, parent = None):
@@ -66,6 +120,8 @@ class ConnNode(Node):
         outputs=[],
         inputBinds=[],
         outputBinds=[],
+        inputDisplays=[],
+        outputDisplays=[],
     ):
         self._signals = {}
         self._slots = {}
@@ -82,6 +138,25 @@ class ConnNode(Node):
         self.outputBinds = outputBinds
 
         super().__init__(scene, self.__class__.conn_title, inputs, outputs)
+
+
+        for idx in range(min(len(self.inputs), len(inputDisplays))):
+            conf = inputDisplays[idx]
+            if isinstance(conf, ConnSocketDisplay):
+                self.inputs[idx].setToolTip(conf.tooltip)
+                self.inputs[idx].setText(conf.name)
+            else:
+                easyWarning(f"{self.__class__.__name__} 实例输入显示配置项索引: {idx} 配置项类型不是 ConnSocketDisplay")
+
+
+        for idx in range(min(len(outputs), len(outputDisplays))):
+            conf = outputDisplays[idx]
+            if isinstance(conf, ConnSocketDisplay):
+                self.outputs[idx].setToolTip(conf.tooltip)
+                self.outputs[idx].setText(conf.name)
+            else:
+                easyWarning(f"{self.__class__.__name__} 实例输出显示配置项索引: {idx} 配置项类型不是 ConnSocketDisplay")
+
 
 
     def registerSignal(self, key, signal):
