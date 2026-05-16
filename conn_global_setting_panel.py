@@ -73,13 +73,6 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         self.viewUpdateModeSelecter.setItemData(3, toolTip3, Qt.ToolTipRole)
         self.viewUpdateModeSelecter.setItemData(4, toolTip4, Qt.ToolTipRole)
 
-
-        self.connectTypeSelecter.addItem("Auto 类型")
-        self.connectTypeSelecter.addItem("Queued 类型")
-        self.connectTypeSelecter.setItemData(0, Qt.AutoConnection, Qt.UserRole)
-        self.connectTypeSelecter.setItemData(1, Qt.QueuedConnection, Qt.UserRole)
-        
-
         idx = self.viewUpdateModeSelecter.findData(GlobalSettingManager.instance().viewPortUpdateMode, Qt.UserRole)
         if idx == -1: 
             easyError(f"未知视图更新模式: {GlobalSettingManager.instance().viewPortUpdateMode}")
@@ -88,12 +81,17 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         self.viewUpdateModeSelecter.currentIndexChanged.connect(self.onViewUpdateModeSelecterChanged)
 
 
+        self.connectTypeSelecter.addItem("Auto 类型")
+        self.connectTypeSelecter.addItem("Queued 类型")
+        self.connectTypeSelecter.setItemData(0, Qt.AutoConnection, Qt.UserRole)
+        self.connectTypeSelecter.setItemData(1, Qt.QueuedConnection, Qt.UserRole)
+
         idx = self.connectTypeSelecter.findData(GlobalSettingManager.instance().connectionType, Qt.UserRole)
         if idx == -1: 
             easyError(f"未知连接类型: {GlobalSettingManager.instance().connectionType}")
         else:
             self.connectTypeSelecter.setCurrentIndex(idx)
-        self.connectTypeSelecter.currentIndexChanged.connect(self.onViewUpdateModeSelecterChanged)
+        self.connectTypeSelecter.currentIndexChanged.connect(self.onConnectTypeSelecterChanged)
 
         self.setObjectName("ViewSettingPanel")
         self.viewUpdateModeSelecter.setObjectName("ViewUpdateModeSelecter")
