@@ -164,6 +164,23 @@ class SerialPort_Widget(QDMNodeContentWidget):
 
         self._update_portNameSelecter(None)
 
+        # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
+        self.setStyleSheet("""
+QComboBox {
+    background-color: #202020;
+    color: #e0e0e0;
+}
+                           
+QComboBox QAbstractItemView {
+    background-color: #202020; 
+}
+                           
+QCheckBox {
+    color: #e0e0e0;
+}
+""")
+
+
 
     def _connect_init(self) -> None:
         self.ui.portNameRefreshBtn.clicked.connect(self._update_portNameSelecter)

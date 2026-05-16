@@ -47,6 +47,17 @@ class QDMNodeTreebox(QTreeWidget):
         self.addMyItems()
         self.expandAll()
 
+
+        self.setObjectName("NodeTreebox")
+        # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
+        
+        self.setStyleSheet("""
+QTreeWidget#NodeTreebox {
+    color: #e0e0e0;
+}
+""")
+
+
     def addMyItems(self):
         keys = list(CONN_NODES.keys())
         keys.sort()

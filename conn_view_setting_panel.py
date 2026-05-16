@@ -59,6 +59,17 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         self.viewUpdateModeSelecter.setCurrentIndex(0)
         self.viewUpdateModeSelecter.currentIndexChanged.connect(self.onModeChanged)
 
+        self.setObjectName("ViewSettingPanel")
+        self.viewUpdateModeSelecter.setObjectName("ViewUpdateModeSelecter")
+        # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
+        self.setStyleSheet("""
+QComboBox#ViewUpdateModeSelecter {
+    background-color: #202020;
+    color: #e0e0e0;
+}
+""")
+
+
     def onModeChanged(self):
         mode = self.viewUpdateModeSelecter.currentData(Qt.UserRole)
         self.modeChanged.emit(mode)
