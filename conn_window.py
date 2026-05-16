@@ -23,7 +23,7 @@ class ConnectionWindow(NodeEditorWindow):
 
     def initUI(self):
         self.name_company = '未知'
-        self.name_product = '连接图编辑器'
+        self.name_product = '信号路由图编辑器'
 
         self.stylesheet_filename = os.path.join(os.path.dirname(__file__), "qss/nodeeditor.qss")
         loadStylesheets(
@@ -61,7 +61,7 @@ class ConnectionWindow(NodeEditorWindow):
 
         self.readSettings()
 
-        self.setWindowTitle("连接图编辑器")
+        self.setWindowTitle("信号路由图编辑器")
         
         SimpleLogger.instance().debug("注册的节点:")
         SimpleLogger.instance().debug(CONN_NODES)
@@ -136,7 +136,7 @@ class ConnectionWindow(NodeEditorWindow):
 
 
     def about(self):
-        QMessageBox.about(self, "关于连接图编辑器",
+        QMessageBox.about(self, "关于信号路由图编辑器",
                 f"改造自 nodeeditor 下的 example_calculator, 与其不同的是, 此编辑器运行逻辑依赖于信号的连接, 而不是直接在节点上执行计算, 这是为实时性而准备的。\n版本: {VERSION}")
 
     def createMenus(self):
