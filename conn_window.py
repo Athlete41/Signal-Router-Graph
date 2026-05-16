@@ -9,7 +9,7 @@ from conn_sub_window import ConnSubWindow
 from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES, VERSION
-from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager
+from conn_utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager
 
 
 # images for the dark skin

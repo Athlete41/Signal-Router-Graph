@@ -6,7 +6,7 @@ from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from .serialport import SerialPort
 from .serialport_ui import Ui_SerialPort
-from utils import easyInfo, easyError, easyWarning, ThreadManager, disconnectAll
+from conn_utils import easyInfo, easyError, easyWarning, ThreadManager, disconnectAll
 
 
 

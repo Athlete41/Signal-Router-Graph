@@ -1,7 +1,7 @@
 
 from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtWidgets import QLabel
-from utils import ThreadManager
+from conn_utils import ThreadManager
 
 
 class QDMThreadPanel(QWidget):

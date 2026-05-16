@@ -9,7 +9,7 @@ from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_S
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
 from nodeeditor.utils import dumpException
 from nodeeditor.node_node import Node
-from utils import logger, SimpleLogger
+from conn_utils import logger, SimpleLogger
 
 DEBUG = False
 DEBUG_CONTEXT = False

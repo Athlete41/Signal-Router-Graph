@@ -4,7 +4,7 @@ from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from conn_conf import register_node, set_node_display
 from conn_node_base import ConnNode, ConnSocketDisplay
-from utils import easyInfo
+from conn_utils import easyInfo
 
 
 
