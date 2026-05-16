@@ -1,6 +1,6 @@
 import os
 from qtpy.QtGui import QIcon, QKeySequence
-from qtpy.QtWidgets import QMdiArea, QWidget, QDockWidget, QAction, QMessageBox, QFileDialog, QGraphicsView
+from qtpy.QtWidgets import QMdiArea, QWidget, QDockWidget, QAction, QMessageBox, QFileDialog
 from qtpy.QtCore import Qt, QSignalMapper
 
 from nodeeditor.utils import loadStylesheets
@@ -32,7 +32,6 @@ class ConnectionWindow(NodeEditorWindow):
         )
 
         self.empty_icon = QIcon(".")
-        self.current_viewportUpdateMode = QGraphicsView.FullViewportUpdate
 
         SimpleLogger.instance()
         ThreadManager.instance()
@@ -124,7 +123,7 @@ class ConnectionWindow(NodeEditorWindow):
                         self.mdiArea.setActiveSubWindow(existing)
                     else:
                         # we need to create new subWindow and open the file
-                        nodeeditor = ConnSubWindow(viewportUpdateMode=self.current_viewportUpdateMode)
+                        nodeeditor = ConnSubWindow()
                         if nodeeditor.fileLoad(fname):
                             self.statusBar().showMessage("File %s loaded" % fname, 5000)
                             nodeeditor.setTitle()
@@ -169,19 +168,6 @@ class ConnectionWindow(NodeEditorWindow):
         self.actSeparator.setVisible(hasMdiChild)
 
         self.updateEditMenu()
-
-    def updateViewportUpdateMode(self, mode: int):
-        # print("update Menus")
-
-        windows = self.mdiArea.subWindowList()
-        for window in windows:
-            editor = window.widget()
-            if editor is None: continue
-            editor.setViewportUpdateMode(mode)
-
-        self.current_viewportUpdateMode = mode
-        logger.info(f"设置视口更新模式为 {mode}")
-        SimpleLogger.instance().info(f"设置视口更新模式为 {mode}")
 
     def updateEditMenu(self):
         try:
@@ -259,7 +245,6 @@ class ConnectionWindow(NodeEditorWindow):
 
     def createToolPanelDock(self):
         self.toolPanel = QDMToolPanel()
-        self.toolPanel.globalSettingPanel.modeChanged.connect(self.updateViewportUpdateMode)
 
         self.toolPanelDock = QDockWidget("工具面板")
         self.toolPanelDock.setWidget(self.toolPanel)
@@ -282,7 +267,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.statusBar().showMessage("Ready")
 
     def createMdiChild(self, child_widget=None):
-        nodeeditor = child_widget if child_widget is not None else ConnSubWindow(viewportUpdateMode=self.current_viewportUpdateMode)
+        nodeeditor = child_widget if child_widget is not None else ConnSubWindow()
         subwnd = self.mdiArea.addSubWindow(nodeeditor)
         subwnd.setWindowIcon(self.empty_icon)
         # nodeeditor.scene.addItemSelectedListener(self.updateEditMenu)

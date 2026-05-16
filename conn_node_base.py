@@ -2,8 +2,6 @@ from qtpy.QtGui import QImage
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont, QFontMetrics
 
-from qtpy import sip
-
 from nodeeditor.node_socket import Socket
 from nodeeditor.node_graphics_socket import QDMGraphicsSocket
 from nodeeditor.node_node import Node
@@ -11,7 +9,7 @@ from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER, LEFT_BOTTOM, LEFT_TOP, RIGHT_BOTTOM, RIGHT_TOP
 from conn_utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod, disconnectAll
-
+from conn_conf import GlobalSettingManager
 
 class ConnGraphicsNode(QDMGraphicsNode):
     def initSizes(self):
@@ -198,53 +196,39 @@ class ConnNode(Node):
         isConnectAction = start_socket is not None and end_socket is not None
 
         if isConnectAction:
+            output_socket = start_socket if start_socket.is_output else end_socket
+            input_socket = end_socket if start_socket.is_output else start_socket
+            if output_socket.node is not self:
+                return
+            
+            signal_owner = None
+            signal_key = None
+            slot_owner = None
+            slot_key = None
             try:
-                output_socket = start_socket if start_socket.is_output else end_socket
-                input_socket = end_socket if start_socket.is_output else start_socket
-
-                # 由信号提供者完成连接
-                if output_socket.node is self:
-                    signal_owner = output_socket.node
-                    signal_key = self.getSignalKeyBySocket(output_socket)
-                    slot_owner = input_socket.node
-                    slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
-
-                    signal = self.getSignal(signal_key)
-                    slot = slot_owner.getSlot(slot_key)
-
-                    signal.connect(slot, Qt.QueuedConnection)
-                    new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
-
-                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽提供者 {slot_owner.__class__.__name__}, 键:\"{slot_key}\" 连接成功")
+                signal_owner = output_socket.node
+                signal_key = self.getSignalKeyBySocket(output_socket)
+                slot_owner = input_socket.node
+                slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
             except Exception as e:
                 easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 创建连接失败:")
                 easyError(e)
                 new_edge.markError()
-        else:
-            try:
-                if new_edge.isError():
-                    return
 
-                signal_owner, signal_key, slot_owner, slot_key = new_edge.getConnInfo()
-                if signal_owner is not self:
-                    return
-
-                signal = self.getSignal(signal_key)
-                slot = slot_owner.getSlot(slot_key)
-                new_edge.clearConnInfo()
-
-                # 检查槽提供者是否已删除, 假设槽提供者的生命周期 = slot_owner.content 的生命周期
-                if not sip.isdeleted(slot_owner.content):
-                    signal = self._signals.get(signal_key, None)
-                    signal.disconnect(slot)
-                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽提供者 {slot_owner.__class__.__name__}, 键:\"{slot_key}\" 断开连接成功")
-                else:
-                    easyDebug(f"{self.__class__.__name__}.onEdgeConnectionChanged: 信号键:\"{signal_key}\" --> 槽键:\"{slot_key}\" 断开连接成功, 槽提供者已删除")
+                return
             
-            except Exception as e:
-                easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 断开连接失败:")
-                easyError(e)
-                # new_edge.markError()
+            new_edge.setConnInfo(signal_owner, signal_key, slot_owner, slot_key)
+            new_edge.signalConnect(GlobalSettingManager.instance().connectionType)
+        else:
+            if new_edge.isError() or not new_edge.isLoaded():
+                return
+
+            signal_owner, signal_key, slot_owner, slot_key = new_edge.getConnInfo()
+            if signal_owner is not self:
+                return
+            
+            new_edge.signalDisconnect()
+            new_edge.clearConnInfo()
 
 
 

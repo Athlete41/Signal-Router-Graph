@@ -1,5 +1,6 @@
 from qtpy.QtCore import Qt, QPointF
 from qtpy.QtGui import QPolygonF, QBrush
+from qtpy.sip import isdeleted
 
 from nodeeditor.node_graphics_edge import QDMGraphicsEdge
 from nodeeditor.node_edge import Edge
@@ -9,6 +10,8 @@ from nodeeditor.node_edge_validators import (
     edge_cannot_connect_two_outputs_or_two_inputs,
     edge_cannot_connect_input_and_output_of_same_node
 )
+
+from conn_utils import easyDebug, easyError
 
 
 class ConnGraphicsEdge(QDMGraphicsEdge):
@@ -66,7 +69,7 @@ class ConnEdge(Edge):
         self._slot_key = None
 
         self._is_error = False
-        self._connect_type = Qt.AutoConnection
+        self._is_loaded = False
 
     def getGraphicsEdgeClass(self):
         return ConnGraphicsEdge
@@ -76,6 +79,7 @@ class ConnEdge(Edge):
         self._signal_key = signal_key
         self._slot_owner = slot_owner
         self._slot_key = slot_key
+        self._is_loaded = True
 
     def getConnInfo(self):
         return self._signal_owner, self._signal_key, self._slot_owner, self._slot_key
@@ -85,6 +89,76 @@ class ConnEdge(Edge):
         self._signal_key = None
         self._slot_owner = None
         self._slot_key = None
+        self._is_loaded = False
+
+    def signalConnect(self, ctype) -> bool:
+        try:
+            if not isinstance(ctype, int):
+                raise TypeError("ctype 必须是 int 类型")
+
+            if not self._is_loaded:
+                raise ValueError("无法执行连接, 还未加载连接信息")
+
+            signal_owner = self._signal_owner
+            signal_key = self._signal_key
+            slot_owner = self._slot_owner
+            slot_key = self._slot_key
+
+            signal = signal_owner.getSignal(signal_key)
+            slot = slot_owner.getSlot(slot_key)
+
+            signal.connect(slot, ctype)
+
+            self._signal_owner = signal_owner
+            self._signal_key = signal_key
+            self._slot_owner = slot_owner
+            self._slot_key = slot_key
+
+            self._is_loaded = True
+            easyDebug(f"连接成功: 信号键:\"{signal_key}\" --> 键:\"{slot_key}\"")
+            
+            return True
+        except Exception as e:
+            easyError(f"连接失败:")
+            easyError(e)
+            self.markError()
+            
+            return False
+
+    def signalDisconnect(self) -> bool:
+        try:
+            if not self._is_loaded:
+                raise ValueError("无法执行断开, 还未加载连接信息")
+            
+            signal_owner = self._signal_owner
+            signal_key = self._signal_key
+            slot_owner = self._slot_owner
+            slot_key = self._slot_key
+
+            if isdeleted(slot_owner.content):
+                raise RuntimeError("槽对象已删除失败")
+            
+            if isdeleted(signal_owner.content):
+                raise RuntimeError("信号对象已删除")
+
+            signal = signal_owner.getSignal(signal_key)
+            slot = slot_owner.getSlot(slot_key)
+
+            signal.disconnect(slot)
+
+            easyDebug(f"断开成功: 信号键:\"{signal_key}\" --X 键:\"{slot_key}\"")
+            
+            return True
+        except Exception as e:
+            easyError(f"断开失败:")
+            easyError(e)
+            self.markError()
+
+            return False
+
+    def signalReconnect(self, ctype):
+        # 短路特性可以保证前面失败后面不执行
+        return self.signalDisconnect() and self.signalConnect(ctype)
 
     def markError(self):
         self._is_error = True
@@ -92,6 +166,9 @@ class ConnEdge(Edge):
 
     def isError(self):
         return self._is_error
+    
+    def isLoaded(self):
+        return self._is_loaded
 
     def deserialize(self, data:dict, hashmap:dict={}, restore_id:bool=True, *args, **kwargs) -> bool:
         """在这里完成重新连接操作"""
@@ -109,6 +186,9 @@ class ConnScene(Scene):
     def getEdgeClass(self):
         return ConnEdge
 
+    def reconnectAll(self, ctype):
+        for edge in self.edges:
+            edge.signalReconnect(ctype)
 
 
 # ConnEdge.registerEdgeValidator(edge_validator_debug)

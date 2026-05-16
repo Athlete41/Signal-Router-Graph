@@ -65,5 +65,63 @@ def set_node_display(tppath: tuple[str],
     ALL_NODES_DISPLAY[tppath].update(new)
 
 
+from qtpy.QtCore import QObject, QMutex, QMutexLocker, Qt
+from PyQt5.QtCore import pyqtSignal
+from qtpy.QtWidgets import QGraphicsView
+
+class GlobalSettingManager(QObject):
+    """
+    全局配置管理器 (全局单例，长期存活)
+    """
+    viewPortUpdateModeChanged = pyqtSignal(int)
+    connectionTypeChanged = pyqtSignal(int)
+
+    _instance = None
+    _mutex = QMutex()
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    @property
+    def viewPortUpdateMode(self):
+        with QMutexLocker(self._mutex):
+            return self._viewPortUpdateMode
+        
+    @property
+    def connectionType(self):
+        with QMutexLocker(self._mutex):
+            return self._connectionType
+        
+    @viewPortUpdateMode.setter
+    def viewPortUpdateMode(self, value):
+        if not isinstance(value, int):
+            raise TypeError("viewPortUpdateMode 只接收 int 类型")
+        
+        with QMutexLocker(self._mutex):
+            self._viewPortUpdateMode = value
+
+        self.viewPortUpdateModeChanged.emit(value)
+
+    @connectionType.setter
+    def connectionType(self, value):
+        if not isinstance(value, int):
+            raise TypeError("connectionType 只接收 int 类型")
+        
+        with QMutexLocker(self._mutex):
+            self._connectionType = value
+
+        self.connectionTypeChanged.emit(value)
+
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._viewPortUpdateMode = QGraphicsView.FullViewportUpdate
+        self._connectionType = Qt.AutoConnection
+
+
+
 # import all nodes and register them
 from connnodes import *

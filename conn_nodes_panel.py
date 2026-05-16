@@ -13,7 +13,7 @@ class QDMNodesPanel(QWidget):
 
     def initUI(self):
         layout = QVBoxLayout(self)
-        layout_btn = QHBoxLayout(self)
+        layout_btn = QHBoxLayout()
         expandAll_btn = QPushButton("展开全部", self)
         collapseAll_btn = QPushButton("收起全部", self)
         self.treebox = QDMNodeTreebox(self)

@@ -130,7 +130,7 @@ def isQObjectInstanceMethod(method):
 
 
 from PyQt5.QtCore import QObject, QThread, QMutex, QMutexLocker, pyqtSignal, QTimer
-from PyQt5 import sip
+from PyQt5.sip import isdeleted
 import typing
 
 
@@ -168,7 +168,7 @@ class ThreadManager(QObject):
         """
         if not isinstance(thread, QThread) and thread is not None:
             raise TypeError("必须是 QThread 实例或 None 类型")
-        if sip.isdeleted(thread):
+        if isdeleted(thread):
             raise ValueError("线程对象已被删除")
 
         with QMutexLocker(self._mutex):
@@ -195,7 +195,7 @@ class ThreadManager(QObject):
     def _auto_unregister(self):
         """由 finished 信号触发，自动注销发出信号的线程"""
         thread = self.sender()
-        if thread is None or sip.isdeleted(thread):
+        if thread is None or isdeleted(thread):
             return
         # 调用 unregister_thread 会再次加锁，但这里锁已经释放，安全
         self.unregister_thread(thread)
@@ -205,7 +205,7 @@ class ThreadManager(QObject):
         to_remove = []
         with QMutexLocker(self._mutex):
             for thread in self._threads:
-                if sip.isdeleted(thread):
+                if isdeleted(thread):
                     to_remove.append(thread)
             for thread in to_remove:
                 self._threads.remove(thread)

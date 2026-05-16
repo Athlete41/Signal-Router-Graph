@@ -2,7 +2,7 @@ from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QDataStream, QIODevice, Qt
 from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu, QGraphicsView
 
-from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE
+from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE, GlobalSettingManager
 from conn_scene import ConnScene
 from nodeeditor.node_editor_widget import NodeEditorWidget
 from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_SQUARE
@@ -18,7 +18,7 @@ DEBUG_CONTEXT = False
 class ConnSubWindow(NodeEditorWidget):
     Scene_class = ConnScene
 
-    def __init__(self, viewportUpdateMode=QGraphicsView.FullViewportUpdate):
+    def __init__(self):
         super().__init__()
         # self.setAttribute(Qt.WA_DeleteOnClose)
 
@@ -32,12 +32,19 @@ class ConnSubWindow(NodeEditorWidget):
         self.scene.addDropListener(self.onDrop)
         self.scene.setNodeClassSelector(self.getNodeClassFromData)
 
-        self.setViewportUpdateMode(viewportUpdateMode)
+        self.setViewportUpdateMode(GlobalSettingManager.instance().viewPortUpdateMode)
+        GlobalSettingManager.instance().viewPortUpdateModeChanged.connect(self.setViewportUpdateMode)
+        GlobalSettingManager.instance().connectionTypeChanged.connect(self.setConnectionType)
 
         self._close_event_listeners = []
 
     def setViewportUpdateMode(self, mode):
         self.view.setViewportUpdateMode(mode)
+        logger.debug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
+        SimpleLogger.instance().debug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
+
+    def setConnectionType(self, ctype):
+        self.scene.reconnectAll(ctype)
 
     def getNodeClassFromData(self, data):
         if 'tppath' not in data: return Node

@@ -1,13 +1,15 @@
 from qtpy.QtGui import QIcon
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QWidget, QVBoxLayout
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from qtpy.QtWidgets import QComboBox, QGraphicsView, QLabel
 from PyQt5.QtCore import pyqtSignal
+
+from conn_conf import GlobalSettingManager
+from conn_utils import easyError
 
 
 
 class QDMGlobalSettingPanel(QWidget):
-    modeChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -15,12 +17,27 @@ class QDMGlobalSettingPanel(QWidget):
 
     def initUI(self):
         layout = QVBoxLayout(self)
-        self.title = QLabel("视图选项", self)
+
+        title = QLabel("全局选项", self)
+
+        layout_viewUpdateMode = QHBoxLayout()
+        viewUpdateModeSelecterLable = QLabel("视图更新模式", self)
         self.viewUpdateModeSelecter = QComboBox(self)
+
+        layout_connectType = QHBoxLayout()
+        connectTypeSelecterLabel = QLabel("信号连接类型", self)
+        self.connectTypeSelecter = QComboBox(self)
         
         self.setLayout(layout)
-        layout.addWidget(self.title)
-        layout.addWidget(self.viewUpdateModeSelecter)
+        layout.addWidget(title)
+
+        layout_viewUpdateMode.addWidget(viewUpdateModeSelecterLable)
+        layout_viewUpdateMode.addWidget(self.viewUpdateModeSelecter)
+        layout.addLayout(layout_viewUpdateMode)
+
+        layout_connectType.addWidget(connectTypeSelecterLabel)
+        layout_connectType.addWidget(self.connectTypeSelecter)
+        layout.addLayout(layout_connectType)
 
 
         self.viewUpdateModeSelecter.addItem(QIcon("icons/run.png"), "全视更新")
@@ -55,21 +72,47 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         self.viewUpdateModeSelecter.setItemData(2, toolTip2, Qt.ToolTipRole)
         self.viewUpdateModeSelecter.setItemData(3, toolTip3, Qt.ToolTipRole)
         self.viewUpdateModeSelecter.setItemData(4, toolTip4, Qt.ToolTipRole)
+
+
+        self.connectTypeSelecter.addItem("Auto 类型")
+        self.connectTypeSelecter.addItem("Queued 类型")
+        self.connectTypeSelecter.setItemData(0, Qt.AutoConnection, Qt.UserRole)
+        self.connectTypeSelecter.setItemData(1, Qt.QueuedConnection, Qt.UserRole)
         
-        self.viewUpdateModeSelecter.setCurrentIndex(0)
-        self.viewUpdateModeSelecter.currentIndexChanged.connect(self.onModeChanged)
+
+        idx = self.viewUpdateModeSelecter.findData(GlobalSettingManager.instance().viewPortUpdateMode, Qt.UserRole)
+        if idx == -1: 
+            easyError(f"未知视图更新模式: {GlobalSettingManager.instance().viewPortUpdateMode}")
+        else:
+            self.viewUpdateModeSelecter.setCurrentIndex(idx)
+        self.viewUpdateModeSelecter.currentIndexChanged.connect(self.onViewUpdateModeSelecterChanged)
+
+
+        idx = self.connectTypeSelecter.findData(GlobalSettingManager.instance().connectionType, Qt.UserRole)
+        if idx == -1: 
+            easyError(f"未知连接类型: {GlobalSettingManager.instance().connectionType}")
+        else:
+            self.connectTypeSelecter.setCurrentIndex(idx)
+        self.connectTypeSelecter.currentIndexChanged.connect(self.onViewUpdateModeSelecterChanged)
 
         self.setObjectName("ViewSettingPanel")
         self.viewUpdateModeSelecter.setObjectName("ViewUpdateModeSelecter")
+        self.connectTypeSelecter.setObjectName("ConnectTypeSelecter")
         # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
         self.setStyleSheet("""
 QComboBox#ViewUpdateModeSelecter {
     background-color: #202020;
     color: #e0e0e0;
 }
+                           
+QComboBox#ConnectTypeSelecter {
+    background-color: #202020;
+    color: #e0e0e0;
+}
 """)
 
+    def onViewUpdateModeSelecterChanged(self):
+        GlobalSettingManager.instance().viewPortUpdateMode = self.viewUpdateModeSelecter.currentData(Qt.UserRole)
 
-    def onModeChanged(self):
-        mode = self.viewUpdateModeSelecter.currentData(Qt.UserRole)
-        self.modeChanged.emit(mode)
+    def onConnectTypeSelecterChanged(self):
+        GlobalSettingManager.instance().connectionType = self.connectTypeSelecter.currentData(Qt.UserRole)
