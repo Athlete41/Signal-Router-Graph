@@ -64,8 +64,8 @@ class Test_TextShowNode(ConnNode):
     tppath = ("测试", "文本显示器")
     icon = "icons/out.png"
     name = "文本显示器"
-    tooltip = "测试节点的提示"
-    conn_title = "测试节点的标题"
+    tooltip = "提供一个槽接收str类型参数并显示"
+    conn_title = "文本显示器"
 
     NodeContent_class = Test_TextShowContent
 
