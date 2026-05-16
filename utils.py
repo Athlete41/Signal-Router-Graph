@@ -3,7 +3,6 @@ import logging.handlers
 from pathlib import Path
 import queue
 import typing
-import types
 
 
 LEVEL = logging.DEBUG
@@ -104,7 +103,7 @@ def easyMsg(msg: str) -> None:
 
 
 
-def disconnect_all(signal, slot=None):
+def disconnectAll(signal, slot=None):
     """基于 PyQt5.15.9 版本"""
     depth = 0
     if slot is not None:
@@ -128,6 +127,112 @@ def isRealSignal(obj):
 
 def isQObjectInstanceMethod(method):
     return hasattr(method, '__self__') and isinstance(method.__self__, QObject)
+
+
+from PyQt5.QtCore import QObject, QThread, QMutex, QMutexLocker, pyqtSignal, QTimer
+from PyQt5 import sip
+import typing
+
+
+class ThreadManager(QObject):
+    """
+    线程管理器 (全局单例，长期存活)
+    持有线程强引用，确保不会被意外析构。
+    提供线程注册/注销接口，自动监听 finished 信号并从列表中移除。
+    提供 shutdown_all_threads 用于程序退出时统一停止所有线程。
+    """
+    list_changed_notify = pyqtSignal()
+
+    _instance = None
+    _mutex = QMutex()
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._threads: list[QThread] = []   # 存储所有注册的线程（强引用）
+        # 定时轮询清理（兜底，防止 finished 信号丢失）
+        self._cleanup_timer = QTimer(self)
+        self._cleanup_timer.setInterval(5000)
+        self._cleanup_timer.timeout.connect(self._clean_dead_threads)
+        self._cleanup_timer.start()
+
+    def register_thread(self, thread: typing.Union[QThread, None]):
+        """
+        注册一个线程，管理器将持有其强引用。
+        线程结束时（finished 信号）会自动注销。
+        """
+        if not isinstance(thread, QThread) and thread is not None:
+            raise TypeError("必须是 QThread 实例或 None 类型")
+        if sip.isdeleted(thread):
+            raise ValueError("线程对象已被删除")
+
+        with QMutexLocker(self._mutex):
+            if thread in self._threads:
+                return
+            self._threads.append(thread)
+
+        thread.finished.connect(self._auto_unregister)
+        self._broadcast_list_changed()
+
+    def unregister_thread(self, thread: QThread):
+        """手动注销一个线程，不再管理"""
+        with QMutexLocker(self._mutex):
+            if thread not in self._threads:
+                return
+            self._threads.remove(thread)
+
+        try:
+            disconnectAll(thread.finished, self._auto_unregister)
+        except (TypeError, RuntimeError):
+            pass
+        self._broadcast_list_changed()
+
+    def _auto_unregister(self):
+        """由 finished 信号触发，自动注销发出信号的线程"""
+        thread = self.sender()
+        if thread is None or sip.isdeleted(thread):
+            return
+        # 调用 unregister_thread 会再次加锁，但这里锁已经释放，安全
+        self.unregister_thread(thread)
+
+    def _clean_dead_threads(self):
+        """定时器轮询清理"""
+        to_remove = []
+        with QMutexLocker(self._mutex):
+            for thread in self._threads:
+                if sip.isdeleted(thread):
+                    to_remove.append(thread)
+            for thread in to_remove:
+                self._threads.remove(thread)
+        if to_remove:
+            self._broadcast_list_changed()
+
+    def shutdown_all_threads(self, timeout_ms: int = 1000):
+        with QMutexLocker(self._mutex):
+            threads_copy = self._threads.copy()
+        for thread in threads_copy:
+            if thread.isRunning():
+                thread.quit()
+                thread.wait(timeout_ms)
+
+    def get_list(self) -> list[QThread]:
+        with QMutexLocker(self._mutex):
+            return self._threads.copy()
+
+    def get_count(self) -> int:
+        with QMutexLocker(self._mutex):
+            return len(self._threads)
+
+    def _broadcast_list_changed(self):
+        self.list_changed_notify.emit()
+
+
+
 
 if __name__ == "__main__":
     logger.error("这是一条错误日志", exc_info=True)

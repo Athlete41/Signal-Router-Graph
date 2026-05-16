@@ -9,7 +9,7 @@ from conn_sub_window import ConnSubWindow
 from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES, VERSION
-from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging
+from utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager
 
 
 # images for the dark skin
@@ -35,6 +35,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.current_viewportUpdateMode = QGraphicsView.FullViewportUpdate
 
         SimpleLogger.instance()
+        ThreadManager.instance()
 
         logger.debug("注册的节点:")
         logger.debug(CONN_NODES)
