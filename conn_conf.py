@@ -128,7 +128,7 @@ class GlobalSettingManager(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._viewPortUpdateMode = QGraphicsView.FullViewportUpdate
+        self._viewPortUpdateMode = QGraphicsView.BoundingRectViewportUpdate
         self._connectionType = Qt.AutoConnection
 
 
