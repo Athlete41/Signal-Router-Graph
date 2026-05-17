@@ -15,7 +15,7 @@ def register_node_now(tppath: tuple[str], class_reference):
         raise TypeError("无效路径, 必须是非空字符串元组: '%s'" % tppath)
     else:
         if tppath in CONN_NODES:
-            raise ValueError("路径 '%s' 已注册" % tppath)
+            raise ValueError(f"路径 {tppath} 已注册")
         
         CONN_NODES[tppath] = class_reference
 
@@ -40,7 +40,7 @@ def get_class_from_tppath(tppath: tuple[str]):
         raise TypeError("无效路径, 必须是非空字符串元组: '%s'" % tppath)
     else:
         if tppath not in CONN_NODES:
-            raise ValueError("路径 '%s' 未注册" % tppath)
+            raise ValueError(f"路径 {tppath} 未注册")
         
         return CONN_NODES[tppath]
 
@@ -50,16 +50,16 @@ def set_node_display(tppath: tuple[str],
                      icon: str = None
                      ):
     if not isinstance(tppath, tuple) or any(not isinstance(p, str) for p in tppath):
-        raise TypeError("无效路径, 必须是非空字符串元组: '%s'" % tppath)
+        raise TypeError(f"无效路径, 必须是非空字符串元组: {tppath}")
   
     if name is not None and not isinstance(name, str):
-        raise TypeError("无效名称, 必须是字符串 或 None: '%s'" % name)
+        raise TypeError(f"无效名称, 必须是字符串 或 None: {name}")
     
     if tooltip is not None and not isinstance(tooltip, str):
-        raise TypeError("无效提示, 必须是字符串 或 None: '%s'" % tooltip)
+        raise TypeError(f"无效提示, 必须是字符串 或 None: {tooltip}")
     
     if icon is not None and not isinstance(icon, str):
-        raise TypeError("无效图标, 必须是字符串 或 None: '%s'" % icon)
+        raise TypeError(f"无效图标, 必须是字符串 或 None: {icon}")
 
     if tppath not in ALL_NODES_DISPLAY:
         ALL_NODES_DISPLAY[tppath] = {}
