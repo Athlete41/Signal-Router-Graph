@@ -23,8 +23,16 @@ class SerialPortNode(ConnNode):
                     socketType=1,
                     key="sendData",
                     tooltip="通过此向串口发送数据",
-                    name="发送",
+                    name="发送-数据",
                     argsType=(QByteArray,)
+                ),
+                
+                ConnSocketConf(
+                    socketType=1,
+                    key="sendText",
+                    tooltip="通过此向串口发送文本",
+                    name="发送-文本",
+                    argsType=(str,)
                 )
             ],
 
@@ -40,6 +48,7 @@ class SerialPortNode(ConnNode):
         )
         self.registerSignal("received", self.content.dataSource.received)
         self.registerSlot("sendData", self.content.dataSource.sendData)
+        self.registerSlot("sendText", self.content.dataSource.sendText)
    
 
     def initInnerClasses(self):

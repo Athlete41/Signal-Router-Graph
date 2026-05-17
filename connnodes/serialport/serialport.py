@@ -24,6 +24,9 @@ class SerialPort(QObject):
     def sendData(self, data: QByteArray):
         self.device.write(data)
 
+    def sendText(self, text: str):
+        self.device.write(text.encode("utf-8"))
+
     def open(self, mode: int = QIODevice.ReadWrite):
         """每次开启都将更新, 否则触发按钮将失去一致性"""
         state = True
