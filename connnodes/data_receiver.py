@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QTextBrowser, QSpinBox, QVBoxLayout
+from qtpy.QtWidgets import QTextBrowser, QSpinBox, QVBoxLayout, QLabel, QHBoxLayout
 from qtpy.QtGui import QTextCursor
 from PyQt5.QtCore import QByteArray
 
@@ -12,11 +12,17 @@ class DataReceiverContent(ConnNodeContentWidget):
     def initUI(self):
         layout = QVBoxLayout(self)
         self.textBrowser = QTextBrowser(self)
+        layout_2 = QHBoxLayout()
+        self.maxLineLabel = QLabel(f"最大行数: 无限", self)
         self.maxLineSpinBox = QSpinBox(self)
+
+        layout_2.addWidget(self.maxLineLabel)
+        layout_2.addWidget(self.maxLineSpinBox)
 
         self.setLayout(layout)
         layout.addWidget(self.textBrowser)
-        layout.addWidget(self.maxLineSpinBox)
+        layout.addLayout(layout_2)
+
         self.maxLineSpinBox.setMinimum(0)
         self.maxLineSpinBox.setMaximum(9999)
 
@@ -26,10 +32,19 @@ class DataReceiverContent(ConnNodeContentWidget):
 
 
     def maxLineSpinBoxHandler(self, value: int):
+        if value == 0:
+            self.maxLineLabel.setText(f"最大行数: 无限")
+        else:
+            self.maxLineLabel.setText(f"最大行数: ")
+
         self.textBrowser.document().setMaximumBlockCount(value)
 
-    def receivedHandler(self, data: QByteArray):
+    def receivedDataHandler(self, data: QByteArray):
         text = bytes(data).decode("utf-8", errors='ignore') 
+        self.textBrowser.moveCursor(QTextCursor.MoveOperation.End)
+        self.textBrowser.insertPlainText(text)
+
+    def receivedTextHandler(self, text: str):
         self.textBrowser.moveCursor(QTextCursor.MoveOperation.End)
         self.textBrowser.insertPlainText(text)
 
@@ -51,20 +66,30 @@ class DataReceiverNode(ConnNode):
             slotsConf=[
                 ConnSocketConf(
                     socketType=1,
-                    key="receivedHandler",
+                    key="receivedDataHandler",
                     tooltip="接收 QByteArray 类型数据并解析为 utf-8 文本字符串",
                     name="数据",
                     argsType=(QByteArray,)
-                )
+                ),
+                ConnSocketConf(
+                    socketType=1,
+                    key="receivedTextHandler",
+                    tooltip="接收文本字符串",
+                    name="文本",
+                    argsType=(str,)
+                ),
             ]
         )
-        self.registerSlot("receivedHandler", self.content.receivedHandler)
+        self.registerSlot("receivedDataHandler", self.content.receivedDataHandler)
+        self.registerSlot("receivedTextHandler", self.content.receivedTextHandler)
 
     def serialize(self):
         res = super().serialize()
+        res['max_line_count'] = self.content.maxLineSpinBox.value()
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
+        self.content.maxLineSpinBox.setValue(data.get('max_line_count', 0))
         return res
     
