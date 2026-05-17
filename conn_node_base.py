@@ -240,10 +240,14 @@ class ConnNode(Node):
         return self.signalsConf[idx].key
 
     def getSlot(self, key) -> "function":
-        return self._slots.get(key)
+        if key not in self._slots:
+            raise ValueError(f"获取槽键: \"{key}\" 时, 槽函数对象不存在")
+        return self._slots[key]
 
     def getSignal(self, key) -> "pyqtSignal":
-        return self._signals.get(key)
+        if key not in self._signals:
+            raise ValueError(f"获取信号键: \"{key}\" 时, 信号对象不存在")
+        return self._signals[key]
 
     def serialize(self):
         res = super().serialize()
