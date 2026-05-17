@@ -42,6 +42,9 @@ class MyNodeContent(ConnNodeContentWidget):
         layout.addWidget(sendBtn)
 
         sendBtn.clicked.connect(self.sendHelloWorld)
+        
+        self.setFixedHeight(50) # 设置高度
+        self.setFixedWidth(100) # 设置宽度
 
     def sendHelloWorld(self):
         self.sendHelloWorldNotify.emit("Hello World!")
