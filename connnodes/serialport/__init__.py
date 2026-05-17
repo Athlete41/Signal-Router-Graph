@@ -21,18 +21,19 @@ class SerialPortNode(ConnNode):
             slotsConf = [
                 ConnSocketConf(
                     socketType=1,
-                    key="sendData",
-                    tooltip="通过此向串口发送数据",
-                    name="发送-数据",
-                    argsType=(QByteArray,)
-                ),
-                
-                ConnSocketConf(
-                    socketType=1,
                     key="sendText",
                     tooltip="通过此向串口发送文本",
                     name="发送-文本",
                     argsType=(str,)
+                ),
+
+
+                ConnSocketConf(
+                    socketType=1,
+                    key="sendData",
+                    tooltip="通过此向串口发送数据",
+                    name="发送-数据",
+                    argsType=(QByteArray,)
                 )
             ],
 
