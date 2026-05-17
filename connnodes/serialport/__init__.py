@@ -8,11 +8,11 @@ from PyQt5.QtCore import QByteArray
 
 @register_node()
 class SerialPortNode(ConnNode):
-    tppath = ("数据源", "串口")
+    tppath = ("数据源", "简单串口")
     icon = "icons/er.png"
-    name = "串口"
+    name = "简单串口"
     tooltip = "简单的串口数据源, 提供读写的端口"
-    conn_title = "串口"
+    conn_title = "简单串口"
 
     NodeContent_class = SerialPort_Widget
 
