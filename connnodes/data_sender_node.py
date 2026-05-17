@@ -24,6 +24,7 @@ class DataSenderContent(QDMNodeContentWidget):
         layout.addWidget(self.sendBtn)
 
         self.autoLineBreak.setText("自动新行")
+        self.autoLineBreak.setChecked(True)
         self.sendBtn.clicked.connect(self.sendData)
 
         # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
@@ -81,5 +82,22 @@ class DataSenderNode(ConnNode):
 
     def initInnerClasses(self):
         super().initInnerClasses()
-        self.grNode.height = 200 # 设置高度
-        self.grNode.width = 200
+        self.grNode.height = 180 # 设置高度
+        self.grNode.width = 180
+
+
+    def serialize(self):
+        res = super().serialize()
+        res['text_content'] = self.content.textEdit.toPlainText()
+        res['auto_line_break_enabled'] = self.content.autoLineBreak.isChecked()
+        
+        return res
+
+    def deserialize(self, data, hashmap={}, restore_id=True):
+        res = super().deserialize(data, hashmap, restore_id)
+
+        self.content.textEdit.setPlainText(data.get('text_content', ""))
+        self.content.autoLineBreak.setChecked(data.get('auto_line_break_enabled', True))
+
+        return res
+    
