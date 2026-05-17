@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from conn_conf import register_node, set_node_display
-from conn_node_base import ConnNode, ConnSocketConf
+from conn_base import ConnNode, ConnSocketConf
 from conn_utils import easyInfo
 
 

@@ -1,14 +1,222 @@
-from qtpy.QtGui import QImage
-from qtpy.QtCore import Qt
-from qtpy.QtGui import QFont, QFontMetrics
+from qtpy.QtCore import Qt, QPointF
+from qtpy.QtGui import QPolygonF, QBrush, QImage, QFont, QFontMetrics
+from qtpy.sip import isdeleted
 
-from nodeeditor.node_socket import Socket
-from nodeeditor.node_graphics_socket import QDMGraphicsSocket
 from nodeeditor.node_node import Node
+from nodeeditor.node_graphics_socket import QDMGraphicsSocket
+from nodeeditor.node_socket import Socket
+from nodeeditor.node_graphics_edge import QDMGraphicsEdge
+from nodeeditor.node_edge import Edge
+from nodeeditor.node_scene import Scene
+from nodeeditor.node_edge_validators import (
+    edge_validator_debug,
+    edge_cannot_connect_two_outputs_or_two_inputs,
+    edge_cannot_connect_input_and_output_of_same_node
+)
 from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER, LEFT_BOTTOM, LEFT_TOP, RIGHT_BOTTOM, RIGHT_TOP
+
 from conn_utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod, disconnectAll
 from conn_conf import GlobalSettingManager
+
+
+class ConnGraphicsEdge(QDMGraphicsEdge):
+
+    def initAssets(self):
+        """箭头绘制相关"""
+        super().initAssets()
+
+        # ---- 箭头相关参数 ----
+        self._arrow_size = 12.0         
+        self._arrow_width = 12
+        self._arrow_color = Qt.white
+
+
+
+    def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
+        super().paint(painter, QStyleOptionGraphicsItem, widget)
+
+        if self.edge.end_socket is None:
+            return
+
+        path = self.path()
+        if path.isEmpty():
+            return
+
+        percent = 0.08 if self.edge.end_socket.is_output else 0.92
+        arrow_pos = path.pointAtPercent(percent)
+        angle = path.angleAtPercent(percent) + (180 if self.edge.end_socket.is_output else 0)
+
+        triangle = QPolygonF([
+            QPointF(self._arrow_size, 0),
+            QPointF(0, -self._arrow_width / 2),
+            QPointF(0, self._arrow_width / 2)
+        ])
+
+        painter.save()
+        painter.translate(arrow_pos)
+        painter.rotate(angle)
+        painter.setBrush(QBrush(self._arrow_color))
+        painter.setPen(Qt.NoPen)
+        painter.drawPolygon(triangle)
+        painter.restore()
+
+
+class ConnEdge(Edge):
+    # 使用独立的 edge_validators 列表，避免与父类的冲突
+    edge_validators = [] 
+
+    def __init__(self, scene, start_socket = None, end_socket = None, edge_type=...):
+        super().__init__(scene, start_socket, end_socket, edge_type)
+        self._signal_owner = None
+        self._signal_key = None
+
+        self._slot_owner = None
+        self._slot_key = None
+
+        self._is_error = False
+        self._is_loaded = False
+
+    def getGraphicsEdgeClass(self):
+        return ConnGraphicsEdge
+    
+    def setConnInfo(self, signal_owner, signal_key, slot_owner, slot_key):
+        self._signal_owner = signal_owner
+        self._signal_key = signal_key
+        self._slot_owner = slot_owner
+        self._slot_key = slot_key
+        self._is_loaded = True
+
+    def getConnInfo(self):
+        return self._signal_owner, self._signal_key, self._slot_owner, self._slot_key
+    
+    def clearConnInfo(self):
+        self._signal_owner = None
+        self._signal_key = None
+        self._slot_owner = None
+        self._slot_key = None
+        self._is_loaded = False
+
+    def signalConnect(self, ctype) -> bool:
+        try:
+            if not isinstance(ctype, int):
+                raise TypeError("ctype 必须是 int 类型")
+
+            if not self._is_loaded:
+                raise ValueError("无法执行连接, 还未加载连接信息")
+
+            signal_owner = self._signal_owner
+            signal_key = self._signal_key
+            slot_owner = self._slot_owner
+            slot_key = self._slot_key
+
+            if isdeleted(slot_owner.content):
+                raise RuntimeError("槽对象已删除失败")
+            
+            if isdeleted(signal_owner.content):
+                raise RuntimeError("信号对象已删除")
+
+            signal = signal_owner.getSignal(signal_key)
+            slot = slot_owner.getSlot(slot_key)
+
+            signal.connect(slot, ctype)
+
+            self._is_loaded = True
+            easyDebug(f"连接成功: 信号键:\"{signal_key}\" --> 键:\"{slot_key}\", 类型 {ctype}")
+            
+            return True
+        except Exception as e:
+            easyError(f"连接失败:")
+            easyError(e)
+            self.markError()
+            
+            return False
+
+    def signalDisconnect(self) -> bool:
+        try:
+            if not self._is_loaded:
+                raise ValueError("无法执行断开, 还未加载连接信息")
+            
+            signal_owner = self._signal_owner
+            signal_key = self._signal_key
+            slot_owner = self._slot_owner
+            slot_key = self._slot_key
+
+            if isdeleted(slot_owner.content):
+                raise RuntimeError("槽对象已删除失败")
+            
+            if isdeleted(signal_owner.content):
+                raise RuntimeError("信号对象已删除")
+
+            signal = signal_owner.getSignal(signal_key)
+            slot = slot_owner.getSlot(slot_key)
+
+            signal.disconnect(slot)
+
+            easyDebug(f"断开成功: 信号键:\"{signal_key}\" --X 键:\"{slot_key}\"")
+            
+            return True
+        except Exception as e:
+            easyError(f"断开失败:")
+            easyError(e)
+            self.markError()
+
+            return False
+
+    def signalReconnect(self, ctype):
+        # 短路特性可以保证前面失败后面不执行
+        return self.signalDisconnect() and self.signalConnect(ctype)
+
+    def markError(self):
+        self._is_error = True
+        self.grEdge.changeColor(Qt.red)
+
+    def isError(self):
+        return self._is_error
+    
+    def isLoaded(self):
+        return self._is_loaded
+
+    def deserialize(self, data:dict, hashmap:dict={}, restore_id:bool=True, *args, **kwargs) -> bool:
+        """在这里完成重新连接操作"""
+        if restore_id: self.id = data['id']
+        self.start_socket = hashmap[data['start']]
+        self.end_socket = hashmap[data['end']]
+        self.edge_type = data['edge_type']
+
+        # 重新连接信号槽槽
+        self.start_socket.node.onEdgeConnectionChanged(self)
+        self.end_socket.node.onEdgeConnectionChanged(self)
+
+
+class ConnScene(Scene):
+    def getEdgeClass(self):
+        return ConnEdge
+
+    def reconnectAll(self, ctype):
+        for edge in self.edges:
+            edge.signalReconnect(ctype)
+
+
+def edge_type_validator(input, output) -> bool:
+    input_type = input.argsType
+    output_type = output.argsType
+
+    if input_type != output_type:
+        easyError(f"输入与输出参数类型不匹配, 输入类型 {input_type}, 输出类型 {output_type}")
+        return False
+    
+    return True
+
+
+# ConnEdge.registerEdgeValidator(edge_validator_debug)
+ConnEdge.registerEdgeValidator(edge_type_validator)
+ConnEdge.registerEdgeValidator(edge_cannot_connect_two_outputs_or_two_inputs)
+# ConnEdge.registerEdgeValidator(edge_cannot_connect_input_and_output_of_same_node)
+
+
+
+
 
 class ConnGraphicsNode(QDMGraphicsNode):
     def initSizes(self):
@@ -75,14 +283,19 @@ class ConnSocketConf:
         key = None,
         name: str = None,
         tooltip: str = None,
+        argsType: tuple[type] = (),
                  ):
         if not isinstance(key, str) or key.strip() == "":
             raise TypeError("key 必须是非空字符串")
         
+        if not isinstance(argsType, tuple):
+            raise TypeError("argsType 必须是元组")
+
         self.socketType = socketType
         self.key = key
         self.tooltip = tooltip
         self.name = name
+        self.argsType = argsType
 
 class ConnSocket(Socket):
     Socket_GR_Class = ConnGraphicsSocket
@@ -103,7 +316,11 @@ class ConnSocket(Socket):
         super().setSocketPosition()
         self.grSocket._text_offset = 1 if self.position == LEFT_BOTTOM or self.position == LEFT_TOP or self.position == LEFT_CENTER else -1
 
+    def setArgsType(self, argsType: tuple[type]):
+        self.argsType = argsType
 
+    def getArgsType(self) -> tuple[type]:
+        return self.argsType
 
 class ConnNode(Node):
     tppath = None
@@ -141,10 +358,12 @@ class ConnNode(Node):
             for idx, conf in enumerate(signalsConf):
                 self.outputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
                 self.outputs[idx].setText(conf.name if conf.name else conf.key)
+                self.outputs[idx].setArgsType(conf.argsType)
 
             for idx, conf in enumerate(slotsConf):
                 self.inputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
                 self.inputs[idx].setText(conf.name if conf.name else conf.key)
+                self.inputs[idx].setArgsType(conf.argsType)
 
         except Exception as e:
             easyError(f"{self.__class__.__name__} 实例初始化时错误:")
@@ -179,7 +398,7 @@ class ConnNode(Node):
     def initSettings(self):
         super().initSettings()
 
-        # 运行多个输入
+        # 允许多个输入
         self.input_multi_edged = True 
         self.input_socket_position = LEFT_CENTER
         self.output_socket_position = RIGHT_CENTER

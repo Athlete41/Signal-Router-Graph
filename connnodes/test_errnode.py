@@ -1,5 +1,5 @@
 from conn_conf import register_node
-from conn_node_base import ConnNode, ConnSocketConf
+from conn_base import ConnNode, ConnSocketConf
 
 @register_node()
 class Test_Error_UnregisteredSignalNode(ConnNode):

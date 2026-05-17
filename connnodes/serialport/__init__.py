@@ -2,7 +2,7 @@ from nodeeditor.node_socket import LEFT_BOTTOM, RIGHT_BOTTOM
 
 from .serialport_widget import SerialPort_Widget
 from conn_conf import register_node
-from conn_node_base import ConnNode, ConnSocketConf
+from conn_base import ConnNode, ConnSocketConf
 
 
 @register_node()
