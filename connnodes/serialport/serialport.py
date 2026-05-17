@@ -4,19 +4,18 @@ from PyQt5.QtCore import QIODevice, QByteArray, pyqtSignal, QObject
 
 class SerialPort(QObject):
     portNameChanged = pyqtSignal(str)
-    received = pyqtSignal(QByteArray, dict)
+    received = pyqtSignal(QByteArray)
     openChanged = pyqtSignal(bool)
     def __init__(self, parent = None):
         super().__init__(parent)
         self.device = QSerialPort()
         self.device.setParent(self)
         self.device.readyRead.connect(self._read_dispatch)
-        self._empty_info = {}
 
     def _read_dispatch(self):
         data = self.device.readAll()
         if data and self.device.isOpen(): 
-            self.received.emit(data, self._empty_info)
+            self.received.emit(data)
 
     def isOpen(self) -> bool:
         return self.device.isOpen()

@@ -44,7 +44,7 @@ class SerialPortNode(ConnNode):
                     key="received",
                     tooltip="通过此获取串口接收的数据",
                     name="数据",
-                    argsType=(QByteArray, dict)
+                    argsType=(QByteArray,)
                 )
             ]
         )
