@@ -106,7 +106,7 @@ class ConnSocket(Socket):
 
 
 class ConnNode(Node):
-    tppath = ("未定义的路径", )
+    tppath = None
     icon = ""
     name = "未定义的名称"
     tooltip = "未定义的提示"

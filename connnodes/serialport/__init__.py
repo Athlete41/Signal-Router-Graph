@@ -5,7 +5,7 @@ from conn_conf import register_node
 from conn_node_base import ConnNode, ConnSocketConf
 
 
-@register_node(("数据源", "串口"))
+@register_node()
 class SerialPortNode(ConnNode):
     tppath = ("数据源", "串口")
     icon = "icons/er.png"

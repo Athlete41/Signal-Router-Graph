@@ -27,7 +27,7 @@ class Test_TextInputContent(QDMNodeContentWidget):
         self.Layout.addWidget(self.textEdit)
 
 
-@register_node(("测试", "文本输入器"))
+@register_node()
 class Test_TextInputNode(ConnNode):
     tppath = ("测试", "文本输入器")
     icon = "icons/emitter.png"
@@ -63,7 +63,7 @@ class Test_TextShowContent(QDMNodeContentWidget):
         self.textShow = QLabel(self)
         self.Layout.addWidget(self.textShow)
 
-@register_node(("测试", "文本显示器"))
+@register_node()
 class Test_TextShowNode(ConnNode):
     tppath = ("测试", "文本显示器")
     icon = "icons/receiver.png"

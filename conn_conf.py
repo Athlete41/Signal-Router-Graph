@@ -19,9 +19,19 @@ def register_node_now(tppath: tuple[str], class_reference):
         
         CONN_NODES[tppath] = class_reference
 
-def register_node(tppath: tuple[str]):
+def register_node(tppath: tuple[str] = None):
     def decorator(original_class):
-        register_node_now(tppath, original_class)
+        path = tppath
+        if path is None and original_class.tppath is None:
+            raise ValueError("节点路径不能为空")
+        elif path is None:
+            path = original_class.tppath
+        elif original_class.tppath is None:
+            original_class.tppath = path
+        elif path != original_class.tppath:
+            raise ValueError("节点路径不能与类属性不同")
+
+        register_node_now(path, original_class)
         return original_class
     return decorator
 

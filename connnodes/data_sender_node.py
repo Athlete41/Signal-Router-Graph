@@ -39,10 +39,9 @@ QCheckBox {
             self.sendDataNotify.emit(QByteArray(text.encode("utf-8")))
 
 
-path = ("数据源", "数据发送器")
-@register_node(path)
+@register_node()
 class DataSenderNode(ConnNode):
-    tppath = path
+    tppath = ("数据源", "数据发送器")
     icon = "icons/emitter.png"
     name = "数据发送器"
     tooltip = "提供一个数据信号发送QByteArray类型"
@@ -71,5 +70,3 @@ class DataSenderNode(ConnNode):
         super().initInnerClasses()
         self.grNode.height = 200 # 设置高度
         self.grNode.width = 200
-
-path = None
