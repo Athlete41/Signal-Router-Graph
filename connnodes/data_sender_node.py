@@ -2,15 +2,14 @@ from qtpy.QtWidgets import QTextEdit, QVBoxLayout, QPushButton, QCheckBox, QDoub
 from qtpy.QtCore import Qt
 
 from PyQt5.QtCore import pyqtSignal, QByteArray, QTimer
-from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from conn_conf import register_node
 from conn_base import ConnNode, ConnSocketConf
-from conn_utils import easyError
+from conn_base import ConnNodeContentWidget
 
 
 
-class DataSenderAdvancedContent(QDMNodeContentWidget):
+class DataSenderAdvancedContent(ConnNodeContentWidget):
     sendDataNotify = pyqtSignal(QByteArray)
     sendTextNotify = pyqtSignal(str)
 
@@ -102,14 +101,6 @@ class DataSenderAdvancedNode(ConnNode):
         )
         self.registerSignal("sendDataNotify", self.content.sendDataNotify)
         self.registerSignal("sendTextNotify", self.content.sendTextNotify)
-
-
-
-    def initInnerClasses(self):
-        super().initInnerClasses()
-        self.grNode.height = 230
-        self.grNode.width = 180
-
 
     def serialize(self):
         res = super().serialize()

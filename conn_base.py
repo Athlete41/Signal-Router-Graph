@@ -1,7 +1,8 @@
-from qtpy.QtCore import Qt, QPointF, QRectF
+from qtpy.QtCore import Qt, QPointF, QSizeF, QRectF
 from qtpy.QtGui import QPolygonF, QBrush, QImage, QFont, QFontMetrics, QColor
 from qtpy.sip import isdeleted
 
+from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_node import Node
 from nodeeditor.node_graphics_socket import QDMGraphicsSocket
 from nodeeditor.node_socket import Socket
@@ -311,20 +312,9 @@ ConnEdge.registerEdgeValidator(edge_cannot_connect_two_outputs_or_two_inputs)
 class ConnGraphicsNode(QDMGraphicsNode):
     def initSizes(self):
         super().initSizes()
-        self.max_width = 1024
-        self.max_height = 1024
-        self.min_width = 64
-        self.min_height = 64
-
-        self.width = 160
-        self.height = 74
-        self.edge_roundness = 6
-        self.edge_padding = 0
-        self.title_horizontal_padding = 8
-        self.title_vertical_padding = 10
 
         self.handle_margin = 10
-        self.handle_size = 10
+        self.handle_size = 20
 
         self.is_resizeable = True
         self.is_resizing = False
@@ -332,9 +322,28 @@ class ConnGraphicsNode(QDMGraphicsNode):
         self.original_width = None
         self.original_height = None
 
+        self.edge_roundness = 2
+        self.edge_padding = 0 + 2 * self.handle_margin
+        self.title_horizontal_padding = 8
+        self.title_vertical_padding = 10
+
+        if self.content is not None:
+            self.width = self.content.size().width() + self.edge_padding * 2
+            self.height = self.content.size().height() + self.edge_padding * 2 + self.title_height
+            
+
     def initAssets(self):
         super().initAssets()
         self.icons = QImage("icons/status_icons.png")
+
+    def getHandleRect(self):
+        return QRectF(
+            self.width - self.handle_size - self.handle_margin, 
+            self.height - self.handle_size - self.handle_margin, 
+            self.handle_size, 
+            self.handle_size
+        )
+
 
     def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
         super().paint(painter, QStyleOptionGraphicsItem, widget)
@@ -343,23 +352,13 @@ class ConnGraphicsNode(QDMGraphicsNode):
             return
 
         painter.setPen(self._pen_selected)
-        handle_rect = QRectF(
-            self.width - self.handle_size - self.handle_margin, 
-            self.height - self.handle_size - self.handle_margin, 
-            self.handle_size, 
-            self.handle_size
-        )
+        handle_rect = self.getHandleRect()
         
         painter.drawRect(handle_rect)
 
     def mousePressEvent(self, event):
         pos = event.pos()
-        handle_rect = QRectF(
-            self.width - self.handle_size - self.handle_margin, 
-            self.height - self.handle_size - self.handle_margin, 
-            self.handle_size, 
-            self.handle_size
-        )
+        handle_rect = self.getHandleRect()
         
         if handle_rect.contains(pos):
             self.is_resizing = True
@@ -375,18 +374,37 @@ class ConnGraphicsNode(QDMGraphicsNode):
     def mouseMoveEvent(self, event):
         if self.is_resizing:
             delta = event.pos() - self.resize_start_pos
-            self.width = min(max(self.original_width + delta.x(), self.min_width), self.max_width)
-            self.height = min(max(self.original_height + delta.y(), self.min_height), self.max_height)
+
+            contentMinSize = self.content.minimumSizeHint() if self.content is not None else QSizeF(64, 64)
+
+            self.width = min(max(self.original_width + delta.x(), contentMinSize.width() + self.edge_padding * 2, 64), 2048)
+            self.height = min(max(self.original_height + delta.y(), contentMinSize.height() + self.edge_padding * 2 + self.title_height, 64), 2048)
             self.prepareGeometryChange()  # 重要：通知视图 boundingRect 改变
             self.update()
             event.accept()
         else:
             super().mouseMoveEvent(event)
 
+    def updateContentIdealGeometry(self):
+        if self.content is not None:
+            self.content.setGeometry(
+                int(self.edge_padding), 
+                int(self.title_height) + int(self.edge_padding),
+                int(self.width - 2 * self.edge_padding), 
+                int(self.height - 2 * self.edge_padding - self.title_height)
+            )
+
     def mouseReleaseEvent(self, event):
         if self.is_resizing:
-            self.node.scene.history.storeHistory("Node resized", setModified=True)
             self.is_resizing = False
+
+            self.node.scene.history.storeHistory("Node resized", setModified=True)
+
+            for socket in self.node.inputs + self.node.outputs:
+                socket.setSocketPosition()
+            self.node.updateConnectedEdges()
+            self.updateContentIdealGeometry()
+
             self.unsetCursor()
             event.accept()
         else:
@@ -471,6 +489,13 @@ class ConnSocket(Socket):
     def getArgsType(self) -> tuple[type]:
         return self.argsType
 
+class ConnNodeContentWidget(QDMNodeContentWidget):
+    def cleanup(self):
+        easyWarning(f"{self.__class__.__name__} 未实现 cleanup 方法...")
+
+    def initUI(self):
+        pass
+
 class ConnNode(Node):
     tppath = None
     icon = ""
@@ -478,6 +503,7 @@ class ConnNode(Node):
     tooltip = "未定义的提示"
     conn_title = "未定义的标题"
 
+    NodeContent_class = ConnNodeContentWidget
     GraphicsNode_class = ConnGraphicsNode
     Socket_class = ConnSocket
 
@@ -632,13 +658,16 @@ class ConnNode(Node):
         self.grNode.height = data.get('height', self.grNode.height)
         self.grNode.prepareGeometryChange()  # 重要：通知视图 boundingRect 改变
         self.grNode.update()
+        self.grNode.updateContentIdealGeometry()
+
+        for socket in self.inputs + self.outputs:
+            socket.setSocketPosition()
+
+        self.updateConnectedEdges()
+        
 
         return res
     
     def remove(self):
-        if callable(getattr(self.content, 'cleanup', None)):
-            self.content.cleanup()
-        else:
-            easyWarning(f"{self.__class__.__name__} 实例删除时, 内容对象没有 cleanup 方法, 请检查是否需要手动释放资源")
-
+        self.content.cleanup()
         super().remove()

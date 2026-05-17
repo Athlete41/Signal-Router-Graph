@@ -53,12 +53,6 @@ class SerialPortNode(ConnNode):
         self.registerSlot("sendText", self.content.dataSource.sendText)
 
         self.content: SerialPort_Widget
-   
-
-    def initInnerClasses(self):
-        super().initInnerClasses()
-        self.grNode.height = 350
-        self.grNode.width = 300
 
     def initSettings(self):
         super().initSettings()

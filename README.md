@@ -25,13 +25,12 @@ python main.py
 ```python
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 from PyQt5.QtCore import pyqtSignal
-from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from conn_conf import register_node
-from conn_base import ConnNode, ConnSocketConf
+from conn_base import ConnNode, ConnSocketConf, ConnNodeContentWidget
 from conn_utils import easyInfo
 
-class MyNodeContent(QDMNodeContentWidget):
+class MyNodeContent(ConnNodeContentWidget):
     # 定义信号
     sendHelloWorldNotify = pyqtSignal(str)
 
@@ -108,10 +107,6 @@ class MyNode(ConnNode):
         self.registerSlot("receive", self.content.receiveSlot)
 
         easyInfo("我的节点创建成功！")
-
-    def initInnerClasses(self):
-        super().initInnerClasses()
-        self.grNode.height = 75 # 设置高度
 ```
 
 ![alt text](image.png)

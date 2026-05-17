@@ -2,12 +2,11 @@ from PyQt5.QtWidgets import QComboBox, QInputDialog
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtCore import Qt, QByteArray, QObject, pyqtSlot, QMetaObject, QThread
 from PyQt5.QtGui import QIcon, QPixmap
-from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from .serialport import SerialPort
 from .serialport_ui import Ui_SerialPort
 from conn_utils import easyInfo, easyError, easyWarning, ThreadManager, disconnectAll
-
+from conn_base import ConnNodeContentWidget
 
 
 BAUD_RATE_ENUM = {
@@ -82,7 +81,7 @@ def _combo_findData(combo: QComboBox, data, auto_add: bool = True) -> int:
     return idx
 
 
-class SerialPort_Widget(QDMNodeContentWidget):
+class SerialPort_Widget(ConnNodeContentWidget):
     """
     避免在外部修改串口的配置, 应该由 UI 全权修改,
     因为在这里直接调用了 QSerialPort 的配置方法。
@@ -367,4 +366,3 @@ QCheckBox {
 
     def _warning_handler(self, msg: str) -> None:
         easyWarning(f"{self.dataSource.device.portName()}: {msg}")
-

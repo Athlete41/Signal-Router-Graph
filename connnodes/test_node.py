@@ -1,9 +1,9 @@
 from qtpy.QtWidgets import QTextEdit, QLabel, QVBoxLayout
 from PyQt5.QtCore import pyqtSignal
-from nodeeditor.node_content_widget import QDMNodeContentWidget
+
 
 from conn_conf import register_node, set_node_display
-from conn_base import ConnNode, ConnSocketConf
+from conn_base import ConnNode, ConnSocketConf, ConnNodeContentWidget
 from conn_utils import easyInfo
 
 
@@ -19,7 +19,7 @@ class Test_TextEdit(QTextEdit):
         self.textNotify.emit(self.toPlainText())
 
 
-class Test_TextInputContent(QDMNodeContentWidget):
+class Test_TextInputContent(ConnNodeContentWidget):
     def initUI(self):
         self.Layout = QVBoxLayout(self)
         self.setLayout(self.Layout)
@@ -55,12 +55,7 @@ class Test_TextInputNode(ConnNode):
         self.registerSignal("textNotify", self.content.textEdit.textNotify)
         easyInfo("测试文本输入器创建成功！")
 
-    def initInnerClasses(self):
-        super().initInnerClasses()
-        self.grNode.height = 120 # 设置高度
-
-
-class Test_TextShowContent(QDMNodeContentWidget):
+class Test_TextShowContent(ConnNodeContentWidget):
     def initUI(self):
         self.Layout = QVBoxLayout(self)
         self.setLayout(self.Layout)
