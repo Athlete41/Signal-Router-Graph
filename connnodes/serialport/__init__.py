@@ -2,7 +2,7 @@ from nodeeditor.node_socket import LEFT_BOTTOM, RIGHT_BOTTOM
 
 from .serialport_widget import SerialPort_Widget
 from conn_conf import register_node
-from conn_node_base import ConnNode, ConnSocketDisplay
+from conn_node_base import ConnNode, ConnSocketConf
 
 
 @register_node(("数据源", "串口"))
@@ -22,13 +22,23 @@ sendData (QByteArray)
 
     def __init__(self, scene):
         super().__init__(scene, 
-            inputs=[1], 
-            inputBinds=["sendData"],
-            inputDisplays=[ConnSocketDisplay(tooltip="槽参数: QByteArray", name="发送 (QByteArray)")],
+            slotsConf = [
+                ConnSocketConf(
+                    socketType=1,
+                    key="sendData",
+                    tooltip="参数: QByteArray",
+                    name="发送 (QByteArray)"
+                )
+            ],
 
-            outputs=[2], 
-            outputBinds=["received"],
-            outputDisplays=[ConnSocketDisplay(tooltip="信号参数: QByteArray, dict", name="数据 (QByteArray, dict)")]
+            signalsConf=[
+                ConnSocketConf(
+                    socketType=2,
+                    key="received",
+                    tooltip="参数: QByteArray, dict",
+                    name="数据 (QByteArray, dict)"
+                )
+            ]
         )
         self.registerSignal("received", self.content.dataSource.received)
         self.registerSlot("sendData", self.content.dataSource.sendData)

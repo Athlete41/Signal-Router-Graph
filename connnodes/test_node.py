@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from nodeeditor.node_content_widget import QDMNodeContentWidget
 
 from conn_conf import register_node, set_node_display
-from conn_node_base import ConnNode, ConnSocketDisplay
+from conn_node_base import ConnNode, ConnSocketConf
 from conn_utils import easyInfo
 
 
@@ -39,13 +39,14 @@ class Test_TextInputNode(ConnNode):
 
     def __init__(self, scene):
         super().__init__(scene, 
-            inputs=[], 
-            inputBinds=[],
-            inputDisplays=[],
-
-            outputs=[2], 
-            outputBinds=["textNotify"],
-            outputDisplays=[ConnSocketDisplay(tooltip="信号参数: str", name="String")]
+            signalsConf = [
+                ConnSocketConf(
+                    socketType=2,
+                    key="textNotify",
+                    tooltip="参数: str",
+                    name="String"
+                )
+            ]
         )
         self.registerSignal("textNotify", self.content.textEdit.textNotify)
         easyInfo("测试文本输入器创建成功！")
@@ -74,13 +75,14 @@ class Test_TextShowNode(ConnNode):
 
     def __init__(self, scene):
         super().__init__(scene, 
-            inputs=[1], 
-            inputBinds=["setText"], 
-            inputDisplays=[ConnSocketDisplay(tooltip="槽参数: str", name="String")],
-
-            outputs=[],
-            outputBinds=[],
-            outputDisplays=[],
+            slotsConf=[
+                ConnSocketConf(
+                    socketType=1,
+                    key="setText",
+                    tooltip="参数: str",
+                    name="String"
+                )
+            ]
         )
         self.registerSlot("setText", self.content.textShow.setText)
         easyInfo("测试文本显示器创建成功！")

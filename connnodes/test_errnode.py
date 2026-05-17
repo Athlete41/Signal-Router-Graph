@@ -1,27 +1,5 @@
 from conn_conf import register_node
-from conn_node_base import ConnNode
-
-
-@register_node(("测试", "异常-绑定未对齐"))
-class Test_Error_BindNotAlignedNode(ConnNode):
-    tppath = ("测试", "异常-绑定未对齐")
-    icon = "icons/emitter.png"
-    name = "异常-绑定未对齐"
-    tooltip = "outputs 和 outputBinds 数量不一致"
-    conn_title = "异常-绑定未对齐"
-
-
-    def __init__(self, scene):
-        super().__init__(scene, 
-            inputs=[], 
-            inputBinds=[],
-            inputDisplays=[],
-
-            outputs=[2], 
-            outputBinds=[],
-            outputDisplays=[],
-        )
-
+from conn_node_base import ConnNode, ConnSocketConf
 
 @register_node(("测试", "异常-未注册信号"))
 class Test_Error_UnregisteredSignalNode(ConnNode):
@@ -34,11 +12,10 @@ class Test_Error_UnregisteredSignalNode(ConnNode):
 
     def __init__(self, scene):
         super().__init__(scene, 
-            inputs=[], 
-            inputBinds=[],
-            inputDisplays=[],
-
-            outputs=[2], 
-            outputBinds=["test_signal"],
-            outputDisplays=[],
+            signalsConf=[
+                ConnSocketConf(
+                    socketType=2,
+                    key="test_signal"
+                )
+            ],
         )

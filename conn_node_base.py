@@ -6,7 +6,6 @@ from nodeeditor.node_socket import Socket
 from nodeeditor.node_graphics_socket import QDMGraphicsSocket
 from nodeeditor.node_node import Node
 from nodeeditor.node_graphics_node import QDMGraphicsNode
-from nodeeditor.node_content_widget import QDMNodeContentWidget
 from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER, LEFT_BOTTOM, LEFT_TOP, RIGHT_BOTTOM, RIGHT_TOP
 from conn_utils import easyInfo, easyError, easyWarning, easyDebug, easyMsg, isRealSignal, isQObjectInstanceMethod, disconnectAll
 from conn_conf import GlobalSettingManager
@@ -70,10 +69,18 @@ class ConnGraphicsSocket(QDMGraphicsSocket):
         return self._text
 
 
-class ConnSocketDisplay:
-    def __init__(self, tooltip: str = "",
-        name: str = "",
+class ConnSocketConf:
+    def __init__(self, 
+        socketType = 1,
+        key = None,
+        name: str = None,
+        tooltip: str = None,
                  ):
+        if not isinstance(key, str) or key.strip() == "":
+            raise TypeError("key 必须是非空字符串")
+        
+        self.socketType = socketType
+        self.key = key
         self.tooltip = tooltip
         self.name = name
 
@@ -99,57 +106,50 @@ class ConnSocket(Socket):
 
 
 class ConnNode(Node):
-    icon = ""
     tppath = ("未定义的路径", )
+    icon = ""
     name = "未定义的名称"
     tooltip = "未定义的提示"
-    
     conn_title = "未定义的标题"
 
     GraphicsNode_class = ConnGraphicsNode
     Socket_class = ConnSocket
 
     def __init__(self, scene, 
-        inputs=[], 
-        outputs=[],
-        inputBinds=[],
-        outputBinds=[],
-        inputDisplays=[],
-        outputDisplays=[],
+        signalsConf: list[ConnSocketConf] = [],
+        slotsConf: list[ConnSocketConf] = [],
     ):
-        self._signals = {}
-        self._slots = {}
-        if len(inputBinds) != len(inputs):
-            easyError(f"{self.__class__.__name__}.__init__ 输入绑定数量与输入数量不匹配")
-        if len(outputBinds) != len(outputs):
-            easyError(f"{self.__class__.__name__}.__init__ 输出绑定数量与输出数量不匹配")
-        if any(not isinstance(key, str) or key.strip() == "" for key in inputBinds):
-            easyError(f"{self.__class__.__name__}.__init__ 输入绑定键必须是非空字符串")
-        if any(not isinstance(key, str) or key.strip() == "" for key in outputBinds):
-            easyError(f"{self.__class__.__name__}.__init__ 输出绑定键必须是非空字符串")
+        try:
+            if any(not isinstance(conf, ConnSocketConf) for conf in signalsConf):
+                raise TypeError("signalsConf 必须是 ConnSocketConf 类型的列表")
 
-        self.inputBinds = inputBinds
-        self.outputBinds = outputBinds
+            if any(not isinstance(conf, ConnSocketConf) for conf in slotsConf):
+                raise TypeError("slotsConf 必须是 ConnSocketConf 类型的列表")
+            
+            self._signals = {}
+            self._slots = {}
 
-        super().__init__(scene, self.__class__.conn_title, inputs, outputs)
+            
+            self.signalsConf = signalsConf
+            self.slotsConf = slotsConf
 
+            inputs = [socket.socketType for socket in slotsConf]
+            outputs = [socket.socketType for socket in signalsConf]
 
-        for idx in range(min(len(self.inputs), len(inputDisplays))):
-            conf = inputDisplays[idx]
-            if isinstance(conf, ConnSocketDisplay):
-                self.inputs[idx].setToolTip(conf.tooltip)
-                self.inputs[idx].setText(conf.name)
-            else:
-                easyWarning(f"{self.__class__.__name__} 实例输入显示配置项索引: {idx} 配置项类型不是 ConnSocketDisplay")
+            super().__init__(scene, self.__class__.conn_title, inputs, outputs)
 
+            for idx, conf in enumerate(signalsConf):
+                self.outputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
+                self.outputs[idx].setText(conf.name if conf.name else conf.key)
 
-        for idx in range(min(len(outputs), len(outputDisplays))):
-            conf = outputDisplays[idx]
-            if isinstance(conf, ConnSocketDisplay):
-                self.outputs[idx].setToolTip(conf.tooltip)
-                self.outputs[idx].setText(conf.name)
-            else:
-                easyWarning(f"{self.__class__.__name__} 实例输出显示配置项索引: {idx} 配置项类型不是 ConnSocketDisplay")
+            for idx, conf in enumerate(slotsConf):
+                self.inputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
+                self.inputs[idx].setText(conf.name if conf.name else conf.key)
+
+        except Exception as e:
+            easyError(f"{self.__class__.__name__} 实例初始化时错误:")
+            easyError(e)
+            raise e # 继续冒泡给默认框架处理
 
 
 
@@ -231,36 +231,19 @@ class ConnNode(Node):
             new_edge.clearConnInfo()
 
 
-
     def getSlotKeyBySocket(self, socket) -> str| None:
-        idx = None
-        try:
-            idx = self.inputs.index(socket)
-            return self.inputBinds[idx]
-        except IndexError:
-            raise IndexError(f"{self.__class__.__name__} 未能找到输入绑定的槽键, 端口索引:{idx}, 检查 inputBinds 是否正确")
+        idx = self.inputs.index(socket)
+        return self.slotsConf[idx].key
         
-
     def getSignalKeyBySocket(self, socket) -> str| None:
-        idx = None
-        try:
-            idx = self.outputs.index(socket)
-            return self.outputBinds[idx]
-        except IndexError:
-            raise IndexError(f"{self.__class__.__name__} 未能找到输出绑定的信号键, 端口索引:{idx}, 检查 outputBinds 是否正确")
+        idx = self.outputs.index(socket)
+        return self.signalsConf[idx].key
 
     def getSlot(self, key) -> "function":
-        if key not in self._slots:
-            raise KeyError(f"{self.__class__.__name__} 未能找到槽键: \"{key}\"")
-        
         return self._slots.get(key)
 
     def getSignal(self, key) -> "pyqtSignal":
-        if key not in self._signals:
-            raise KeyError(f"{self.__class__.__name__} 未能找到信号键: \"{key}\"")
-        
         return self._signals.get(key)
-
 
     def serialize(self):
         res = super().serialize()
