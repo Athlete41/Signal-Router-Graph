@@ -16,3 +16,6 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+## 框架说明
+此框架是在 nodeeditor 基础上开发的, 项目生命较短, 所以开发过快, 已成屎山, 所以不建议轻易改动, 具体请参考: ./doc/设计文档.md
