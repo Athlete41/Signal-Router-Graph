@@ -45,9 +45,9 @@ class ConnGraphicsEdge(QDMGraphicsEdge):
         if path.isEmpty():
             return
 
-        percent = 0.08 if self.edge.end_socket.is_output else 0.92
+        percent = 0.5
         arrow_pos = path.pointAtPercent(percent)
-        angle = path.angleAtPercent(percent) + (180 if self.edge.end_socket.is_output else 0)
+        angle = -(path.angleAtPercent(percent) + (180 if self.edge.end_socket.is_output else 0))
 
         triangle = QPolygonF([
             QPointF(self._arrow_size, 0),
