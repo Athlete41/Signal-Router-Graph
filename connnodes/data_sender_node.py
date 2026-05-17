@@ -10,6 +10,7 @@ from conn_utils import easyError
 
 class DataSenderContent(QDMNodeContentWidget):
     sendDataNotify = pyqtSignal(QByteArray)
+    sendTextNotify = pyqtSignal(str)
 
     def initUI(self):
         layout = QVBoxLayout(self)
@@ -37,6 +38,7 @@ QCheckBox {
         text = self.textEdit.toPlainText() + ("\n" if self.autoLineBreak.isChecked() else "")
         if text != "":
             self.sendDataNotify.emit(QByteArray(text.encode("utf-8")))
+            self.sendTextNotify.emit(text)
 
 
 @register_node()
@@ -44,7 +46,7 @@ class DataSenderNode(ConnNode):
     tppath = ("数据源", "数据发送器")
     icon = "icons/emitter.png"
     name = "数据发送器"
-    tooltip = "提供一个数据信号发送QByteArray类型"
+    tooltip = "可以发送 QByteArray 类型数据"
     conn_title = "数据发送器"
 
     NodeContent_class = DataSenderContent
@@ -55,15 +57,23 @@ class DataSenderNode(ConnNode):
                 ConnSocketConf(
                     socketType=2,
                     key="sendDataNotify",
-                    tooltip="参数: QByteArray",
-                    name="QByteArray"
+                    tooltip="会将字符串转换为 QByteArray 类型后发送",
+                    name="数据",
+                    argsType=(QByteArray,)
+                ),
+
+                ConnSocketConf(
+                    socketType=2,
+                    key="sendTextNotify",
+                    tooltip="直接发送文本字符串",
+                    name="文本",
+                    argsType=(str,)
                 )
             ]
         )
-        try:
-            self.registerSignal("sendDataNotify", self.content.sendDataNotify)
-        except Exception as e:
-            easyError(e)
+        self.registerSignal("sendDataNotify", self.content.sendDataNotify)
+        self.registerSignal("sendTextNotify", self.content.sendTextNotify)
+
 
 
     def initInnerClasses(self):

@@ -32,7 +32,7 @@ class Test_TextInputNode(ConnNode):
     tppath = ("测试", "文本输入器")
     icon = "icons/emitter.png"
     name = "文本输入器"
-    tooltip = "提供一个文本信号发送str类型"
+    tooltip = "可以编辑文本并自动发送文本"
     conn_title = "文本输入器"
 
     NodeContent_class = Test_TextInputContent
@@ -43,8 +43,9 @@ class Test_TextInputNode(ConnNode):
                 ConnSocketConf(
                     socketType=2,
                     key="textNotify",
-                    tooltip="参数: str",
-                    name="String"
+                    tooltip="当文本输入改变时发送",
+                    name="文本",
+                    argsType=(str,)
                 )
             ]
         )
@@ -68,7 +69,7 @@ class Test_TextShowNode(ConnNode):
     tppath = ("测试", "文本显示器")
     icon = "icons/receiver.png"
     name = "文本显示器"
-    tooltip = "提供一个槽接收str类型参数并显示"
+    tooltip = "可以显示文本"
     conn_title = "文本显示器"
 
     NodeContent_class = Test_TextShowContent
@@ -79,8 +80,9 @@ class Test_TextShowNode(ConnNode):
                 ConnSocketConf(
                     socketType=1,
                     key="setText",
-                    tooltip="参数: str",
-                    name="String"
+                    tooltip="通过此显示文本",
+                    name="显示",
+                    argsType=(str,)
                 )
             ]
         )

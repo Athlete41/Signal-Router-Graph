@@ -15,7 +15,8 @@ class Test_Error_UnregisteredSignalNode(ConnNode):
             signalsConf=[
                 ConnSocketConf(
                     socketType=2,
-                    key="test_signal"
+                    key="test_signal",
+                    argsType=(str,)
                 )
             ],
         )

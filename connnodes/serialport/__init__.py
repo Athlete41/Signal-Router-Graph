@@ -3,6 +3,7 @@ from nodeeditor.node_socket import LEFT_BOTTOM, RIGHT_BOTTOM
 from .serialport_widget import SerialPort_Widget
 from conn_conf import register_node
 from conn_base import ConnNode, ConnSocketConf
+from PyQt5.QtCore import QByteArray
 
 
 @register_node()
@@ -10,12 +11,7 @@ class SerialPortNode(ConnNode):
     tppath = ("数据源", "串口")
     icon = "icons/er.png"
     name = "串口"
-    tooltip = """串口数据源:
-信号: 
-received (QByteArray, dict)
-槽:
-sendData (QByteArray)
-"""
+    tooltip = "简单的串口数据源, 提供读写的端口"
     conn_title = "串口"
 
     NodeContent_class = SerialPort_Widget
@@ -26,8 +22,9 @@ sendData (QByteArray)
                 ConnSocketConf(
                     socketType=1,
                     key="sendData",
-                    tooltip="参数: QByteArray",
-                    name="发送 (QByteArray)"
+                    tooltip="通过此向串口发送数据",
+                    name="发送",
+                    argsType=(QByteArray,)
                 )
             ],
 
@@ -35,8 +32,9 @@ sendData (QByteArray)
                 ConnSocketConf(
                     socketType=2,
                     key="received",
-                    tooltip="参数: QByteArray, dict",
-                    name="数据 (QByteArray, dict)"
+                    tooltip="通过此获取串口接收的数据",
+                    name="数据",
+                    argsType=(QByteArray, dict)
                 )
             ]
         )

@@ -199,11 +199,14 @@ class ConnScene(Scene):
 
 
 def edge_type_validator(input, output) -> bool:
-    input_type = input.argsType
-    output_type = output.argsType
+    signal_socket = output if output.is_output else input
+    slot_socket = input if output.is_output else output
 
-    if input_type != output_type:
-        easyError(f"输入与输出参数类型不匹配, 输入类型 {input_type}, 输出类型 {output_type}")
+    if signal_socket.argsType != slot_socket.argsType:
+        signalArgs = ', '.join([t.__name__ for t in signal_socket.argsType])
+        slotArgs = ', '.join([t.__name__ for t in slot_socket.argsType])
+
+        easyError(f"信号与槽参数类型不匹配, 信号参数类型 ({signalArgs}), 槽参数类型 ({slotArgs})")
         return False
     
     return True
@@ -356,12 +359,14 @@ class ConnNode(Node):
             super().__init__(scene, self.__class__.conn_title, inputs, outputs)
 
             for idx, conf in enumerate(signalsConf):
-                self.outputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
+                tooltip = f"{conf.tooltip}\n参数: ({', '.join([arg.__name__ for arg in conf.argsType])})"
+                self.outputs[idx].setToolTip(tooltip)
                 self.outputs[idx].setText(conf.name if conf.name else conf.key)
                 self.outputs[idx].setArgsType(conf.argsType)
 
             for idx, conf in enumerate(slotsConf):
-                self.inputs[idx].setToolTip(conf.tooltip if conf.tooltip else "")
+                tooltip = f"{conf.tooltip}\n参数: ({', '.join([arg.__name__ for arg in conf.argsType])})"
+                self.inputs[idx].setToolTip(tooltip)
                 self.inputs[idx].setText(conf.name if conf.name else conf.key)
                 self.inputs[idx].setArgsType(conf.argsType)
 
@@ -415,9 +420,9 @@ class ConnNode(Node):
         isConnectAction = start_socket is not None and end_socket is not None
 
         if isConnectAction:
-            output_socket = start_socket if start_socket.is_output else end_socket
-            input_socket = end_socket if start_socket.is_output else start_socket
-            if output_socket.node is not self:
+            signal_socket = start_socket if start_socket.is_output else end_socket
+            slot_socket = end_socket if start_socket.is_output else start_socket
+            if signal_socket.node is not self:
                 return
             
             signal_owner = None
@@ -425,10 +430,10 @@ class ConnNode(Node):
             slot_owner = None
             slot_key = None
             try:
-                signal_owner = output_socket.node
-                signal_key = self.getSignalKeyBySocket(output_socket)
-                slot_owner = input_socket.node
-                slot_key = input_socket.node.getSlotKeyBySocket(input_socket)
+                signal_owner = signal_socket.node
+                signal_key = self.getSignalKeyBySocket(signal_socket)
+                slot_owner = slot_socket.node
+                slot_key = slot_socket.node.getSlotKeyBySocket(slot_socket)
             except Exception as e:
                 easyError(f"{self.__class__.__name__}.onEdgeConnectionChanged: 创建连接失败:")
                 easyError(e)
