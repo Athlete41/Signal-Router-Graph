@@ -1,5 +1,5 @@
-from qtpy.QtCore import Qt, QPointF
-from qtpy.QtGui import QPolygonF, QBrush, QImage, QFont, QFontMetrics
+from qtpy.QtCore import Qt, QPointF, QRectF
+from qtpy.QtGui import QPolygonF, QBrush, QImage, QFont, QFontMetrics, QColor
 from qtpy.sip import isdeleted
 
 from nodeeditor.node_node import Node
@@ -311,6 +311,11 @@ ConnEdge.registerEdgeValidator(edge_cannot_connect_two_outputs_or_two_inputs)
 class ConnGraphicsNode(QDMGraphicsNode):
     def initSizes(self):
         super().initSizes()
+        self.max_width = 1024
+        self.max_height = 1024
+        self.min_width = 64
+        self.min_height = 64
+
         self.width = 160
         self.height = 74
         self.edge_roundness = 6
@@ -318,22 +323,76 @@ class ConnGraphicsNode(QDMGraphicsNode):
         self.title_horizontal_padding = 8
         self.title_vertical_padding = 10
 
+        self.handle_margin = 10
+        self.handle_size = 10
+
+        self.is_resizeable = True
+        self.is_resizing = False
+        self.resize_start_pos = None
+        self.original_width = None
+        self.original_height = None
+
     def initAssets(self):
         super().initAssets()
         self.icons = QImage("icons/status_icons.png")
 
-    # def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
-    #     super().paint(painter, QStyleOptionGraphicsItem, widget)
+    def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
+        super().paint(painter, QStyleOptionGraphicsItem, widget)
 
-    #     offset = 24.0
-    #     if self.node.isDirty(): offset = 0.0
-    #     if self.node.isInvalid(): offset = 48.0
+        if not self.is_resizeable: 
+            return
 
-    #     painter.drawImage(
-    #         QRectF(-10, -10, 24.0, 24.0),
-    #         self.icons,
-    #         QRectF(offset, 0, 24.0, 24.0)
-    #     )
+        painter.setPen(self._pen_selected)
+        handle_rect = QRectF(
+            self.width - self.handle_size - self.handle_margin, 
+            self.height - self.handle_size - self.handle_margin, 
+            self.handle_size, 
+            self.handle_size
+        )
+        
+        painter.drawRect(handle_rect)
+
+    def mousePressEvent(self, event):
+        pos = event.pos()
+        handle_rect = QRectF(
+            self.width - self.handle_size - self.handle_margin, 
+            self.height - self.handle_size - self.handle_margin, 
+            self.handle_size, 
+            self.handle_size
+        )
+        
+        if handle_rect.contains(pos):
+            self.is_resizing = True
+            self.resize_start_pos = pos
+            self.original_width = self.width
+            self.original_height = self.height
+
+            self.setCursor(Qt.SizeFDiagCursor)
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.is_resizing:
+            delta = event.pos() - self.resize_start_pos
+            self.width = min(max(self.original_width + delta.x(), self.min_width), self.max_width)
+            self.height = min(max(self.original_height + delta.y(), self.min_height), self.max_height)
+            self.prepareGeometryChange()  # 重要：通知视图 boundingRect 改变
+            self.update()
+            event.accept()
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.is_resizing:
+            self.node.scene.history.storeHistory("Node resized", setModified=True)
+            self.is_resizing = False
+            self.unsetCursor()
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
+
+
 
 class ConnGraphicsSocket(QDMGraphicsSocket):
     def initAssets(self):
@@ -563,10 +622,17 @@ class ConnNode(Node):
     def serialize(self):
         res = super().serialize()
         res['tppath'] = self.__class__.tppath
+        res['width'] = self.grNode.width
+        res['height'] = self.grNode.height
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
+        self.grNode.width = data.get('width', self.grNode.width)
+        self.grNode.height = data.get('height', self.grNode.height)
+        self.grNode.prepareGeometryChange()  # 重要：通知视图 boundingRect 改变
+        self.grNode.update()
+
         return res
     
     def remove(self):
