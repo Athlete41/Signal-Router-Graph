@@ -79,7 +79,8 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         else:
             self.viewUpdateModeSelecter.setCurrentIndex(idx)
         self.viewUpdateModeSelecter.currentIndexChanged.connect(self.onViewUpdateModeSelecterChanged)
-
+        GlobalSettingManager.instance().viewPortUpdateModeChanged.connect(self.updateViewUpdateModeSelecter)
+        
 
         self.connectTypeSelecter.addItem("Auto 类型")
         self.connectTypeSelecter.addItem("Queued 类型")
@@ -92,6 +93,7 @@ QGraphicsView 最终可能会花费更多时间去寻找最小区域，而不是
         else:
             self.connectTypeSelecter.setCurrentIndex(idx)
         self.connectTypeSelecter.currentIndexChanged.connect(self.onConnectTypeSelecterChanged)
+        GlobalSettingManager.instance().connectionTypeChanged.connect(self.updateConnectTypeSelecter)
 
         self.setObjectName("ViewSettingPanel")
         self.viewUpdateModeSelecter.setObjectName("ViewUpdateModeSelecter")
@@ -108,6 +110,26 @@ QComboBox#ConnectTypeSelecter {
     color: #e0e0e0;
 }
 """)
+
+    def updateConnectTypeSelecter(self, ctype: int):
+        self.connectTypeSelecter.blockSignals(True)
+        idx = self.connectTypeSelecter.findData(ctype, Qt.UserRole)
+        if idx == -1: 
+            easyError(f"未知连接类型: {ctype}")
+        else:
+            self.connectTypeSelecter.setCurrentIndex(idx)
+        self.connectTypeSelecter.blockSignals(False)
+
+
+    def updateViewUpdateModeSelecter(self, mode: int):
+        self.viewUpdateModeSelecter.blockSignals(True)
+        idx = self.viewUpdateModeSelecter.findData(mode, Qt.UserRole)
+        if idx == -1: 
+            easyError(f"未知视图更新模式: {mode}")
+        else:
+            self.viewUpdateModeSelecter.setCurrentIndex(idx)
+        self.viewUpdateModeSelecter.blockSignals(False)
+
 
     def onViewUpdateModeSelecterChanged(self):
         GlobalSettingManager.instance().viewPortUpdateMode = self.viewUpdateModeSelecter.currentData(Qt.UserRole)

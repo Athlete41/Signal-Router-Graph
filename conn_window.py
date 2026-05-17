@@ -1,14 +1,14 @@
 import os
 from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import QMdiArea, QWidget, QDockWidget, QAction, QMessageBox, QFileDialog
-from qtpy.QtCore import Qt, QSignalMapper
+from qtpy.QtCore import Qt, QSignalMapper, QSettings
 
 from nodeeditor.utils import loadStylesheets
 from nodeeditor.node_editor_window import NodeEditorWindow
 from conn_sub_window import ConnSubWindow
 from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
-from conn_conf import CONN_NODES, VERSION
+from conn_conf import CONN_NODES, VERSION, GlobalSettingManager
 from conn_utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager
 
 
@@ -291,3 +291,15 @@ class ConnectionWindow(NodeEditorWindow):
             if window.widget().filename == filename:
                 return window
         return None
+
+    def readSettings(self):
+        super().readSettings()
+        settings = QSettings(self.name_company, self.name_product)
+        GlobalSettingManager.instance().viewPortUpdateMode = settings.value("viewPortUpdateMode", GlobalSettingManager.instance().viewPortUpdateMode)
+        GlobalSettingManager.instance().connectionType = settings.value("connectionType", GlobalSettingManager.instance().connectionType)
+
+    def writeSettings(self):
+        super().writeSettings()
+        settings = QSettings(self.name_company, self.name_product)
+        settings.setValue("viewPortUpdateMode", GlobalSettingManager.instance().viewPortUpdateMode)
+        settings.setValue("connectionType", GlobalSettingManager.instance().connectionType)
