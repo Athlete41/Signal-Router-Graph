@@ -22,9 +22,12 @@ class Test_TextEdit(QTextEdit):
 class Test_TextInputContent(ConnNodeContentWidget):
     def initUI(self):
         self.Layout = QVBoxLayout(self)
-        self.setLayout(self.Layout)
         self.textEdit = Test_TextEdit(self)
+
+        self.setLayout(self.Layout)
         self.Layout.addWidget(self.textEdit)
+
+        self.resize(200, 120)
 
     def cleanup(self):
         ...
@@ -58,9 +61,12 @@ class Test_TextInputNode(ConnNode):
 class Test_TextShowContent(ConnNodeContentWidget):
     def initUI(self):
         self.Layout = QVBoxLayout(self)
-        self.setLayout(self.Layout)
         self.textShow = QLabel(self)
+        
+        self.setLayout(self.Layout)
         self.Layout.addWidget(self.textShow)
+
+        self.resize(200, 120)
 
     def cleanup(self):
         ...

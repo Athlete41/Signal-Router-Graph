@@ -494,7 +494,7 @@ class ConnNodeContentWidget(QDMNodeContentWidget):
         easyWarning(f"{self.__class__.__name__} 未实现 cleanup 方法...")
 
     def initUI(self):
-        pass
+        self.resize(200, 120)
 
 class ConnNode(Node):
     tppath = None

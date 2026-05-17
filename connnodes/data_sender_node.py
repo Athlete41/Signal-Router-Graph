@@ -41,6 +41,8 @@ class DataSenderAdvancedContent(ConnNodeContentWidget):
         self.timerDurationSetter.setDecimals(3)
         self.timerDurationSetter.setValue(1)
 
+        self.resize(200, 200)
+
 
         # TODO 暂时没找到细致修改全局样式的方法, 这里先简单处理
         self.setStyleSheet("""                 
