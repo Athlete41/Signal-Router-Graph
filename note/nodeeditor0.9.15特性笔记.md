@@ -1,3 +1,5 @@
+版本: 0.9.15
+
 # 图的反序列化
 
 ## 框架如何找到对应的节点类?
@@ -62,6 +64,7 @@ class Scene(Serializable):
 ```
 
 ## 连接
+此版本对自定义连接的支持较弱，如果需要自定义连接需要更改较多东西
 
 ## 连接验证
 相关内部代码如下, 这非常简单, 使用`Edge.registerEdgeValidator`方法注册验证器。对所有连接有效。
@@ -94,7 +97,7 @@ class Edge(Serializable):
         return True
 ```
 
-## 连接图形
+## 连接绘制
 
 想要改变需要自定义连接图形，需要自定义 `MyGraphicsEdge` 类，并且在自定义的 `Edge` 类中重写 `getGraphicsEdgeClass` 指定。
 
@@ -106,4 +109,31 @@ MyEdge(Edge):
 
 MyGraphicsEdge(QDMGraphicsEdge):
     ...
+```
+
+
+## 自定义连接的粘贴问题
+
+通过调试器发现，复制粘贴的过程为先序列化再反序列化，序列化没有问题可以进入我们重写的入口，但是反序列化不行，
+反序列化默认使用 `Edge` 类, 需要先自定义一个粘贴板类再在自定义场景类中指定。
+
+
+```python
+
+class MyEdge(Edge):
+    ...
+
+class MySceneClipboard(SceneClipboard):
+    def deserializeFromClipboard(self, data: dict, *args, **kwargs):
+        ... # 较长的原逻辑
+        if 'edges' in data:
+            for edge_data in data['edges']:
+                new_edge = MyEdge(self.scene) # 在这里改成你的
+                new_edge.deserialize(edge_data, hashmap, restore_id=False, *args, **kwargs)
+
+        ... # 原逻辑
+
+class MyScene(Scene):
+    clipboardClass = MySceneClipboard
+
 ```

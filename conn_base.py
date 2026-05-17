@@ -8,6 +8,7 @@ from nodeeditor.node_socket import Socket
 from nodeeditor.node_graphics_edge import QDMGraphicsEdge
 from nodeeditor.node_edge import Edge
 from nodeeditor.node_scene import Scene
+from nodeeditor.node_scene_clipboard import SceneClipboard
 from nodeeditor.node_edge_validators import (
     edge_validator_debug,
     edge_cannot_connect_two_outputs_or_two_inputs,
@@ -188,8 +189,94 @@ class ConnEdge(Edge):
         self.start_socket.node.onEdgeConnectionChanged(self)
         self.end_socket.node.onEdgeConnectionChanged(self)
 
+class ConnSceneClipboard(SceneClipboard):
+    def deserializeFromClipboard(self, data: dict, *args, **kwargs):
+        """
+        复制于原库代码, 它的边反序列化硬编码了Edge类型, 这里必须全部复制更改
+        """
+
+        hashmap = {}
+
+        # calculate mouse pointer - scene position
+        view = self.scene.getView()
+        mouse_scene_pos = view.last_scene_mouse_position
+
+        # calculate selected objects bbox and center
+        minx, maxx, miny, maxy = 10000000,-10000000, 10000000,-10000000
+        for node_data in data['nodes']:
+            if 'pos_x' in node_data and 'pos_y' in node_data:
+                x, y = node_data['pos_x'], node_data['pos_y']
+            else:
+                # added support if node pos serializes into `pos` instead of `pos_x` and `pos_y`
+                x, y = node_data['pos']
+            if x < minx: minx = x
+            if x > maxx: maxx = x
+            if y < miny: miny = y
+            if y > maxy: maxy = y
+
+        # add width and height of a node
+        maxx -= 180
+        maxy += 100
+
+        relbboxcenterx = (minx + maxx) / 2 - minx
+        relbboxcentery = (miny + maxy) / 2 - miny
+
+        if False:
+            print (" *** PASTA:")
+            print("Copied boudaries:\n\tX:", minx, maxx, "   Y:", miny, maxy)
+            print("\tbbox_center:", relbboxcenterx, relbboxcentery)
+
+        # calculate the offset of the newly creating nodes
+        mousex, mousey = mouse_scene_pos.x(), mouse_scene_pos.y()
+
+        # create each node
+        created_nodes = []
+
+        self.scene.setSilentSelectionEvents()
+
+        self.scene.doDeselectItems()
+
+        for node_data in data['nodes']:
+            new_node = self.scene.getNodeClassFromData(node_data)(self.scene)
+            new_node.deserialize(node_data, hashmap, restore_id=False, *args, **kwargs)
+            created_nodes.append(new_node)
+
+            # readjust the new nodeeditor's position
+
+            # new node's current position
+            posx, posy = new_node.pos.x(), new_node.pos.y()
+            newx, newy = mousex + posx - minx, mousey + posy - miny
+
+            new_node.setPos(newx, newy)
+
+            new_node.doSelect()
+
+            if False:
+                print("** PASTA SUM:")
+                print("\tMouse pos:", mousex, mousey)
+                print("\tnew node pos:", posx, posy)
+                print("\tFINAL:", newx, newy)
+
+        # create each edge
+        if 'edges' in data:
+            for edge_data in data['edges']:
+                new_edge = ConnEdge(self.scene)
+                new_edge.deserialize(edge_data, hashmap, restore_id=False, *args, **kwargs)
+
+
+        self.scene.setSilentSelectionEvents(False)
+
+        # store history
+        self.scene.history.storeHistory("Pasted elements in scene", setModified=True)
+
+        return created_nodes
+
+
 
 class ConnScene(Scene):
+
+    clipboardClass = ConnSceneClipboard
+
     def getEdgeClass(self):
         return ConnEdge
 
