@@ -26,6 +26,9 @@ class Test_TextInputContent(QDMNodeContentWidget):
         self.textEdit = Test_TextEdit(self)
         self.Layout.addWidget(self.textEdit)
 
+    def cleanup(self):
+        ...
+
 
 @register_node()
 class Test_TextInputNode(ConnNode):
@@ -63,6 +66,9 @@ class Test_TextShowContent(QDMNodeContentWidget):
         self.setLayout(self.Layout)
         self.textShow = QLabel(self)
         self.Layout.addWidget(self.textShow)
+
+    def cleanup(self):
+        ...
 
 @register_node()
 class Test_TextShowNode(ConnNode):

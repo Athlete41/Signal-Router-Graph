@@ -41,6 +41,9 @@ QCheckBox {
             self.sendTextNotify.emit(text)
 
 
+    def cleanup(self):
+        ...
+
 @register_node()
 class DataSenderNode(ConnNode):
     tppath = ("数据源", "数据发送器")

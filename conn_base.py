@@ -568,3 +568,11 @@ class ConnNode(Node):
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
         return res
+    
+    def remove(self):
+        if callable(getattr(self.content, 'cleanup', None)):
+            self.content.cleanup()
+        else:
+            easyWarning(f"{self.__class__.__name__} 实例删除时, 内容对象没有 cleanup 方法, 请检查是否需要手动释放资源")
+
+        super().remove()
