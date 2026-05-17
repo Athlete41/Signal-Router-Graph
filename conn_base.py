@@ -334,7 +334,6 @@ class ConnGraphicsNode(QDMGraphicsNode):
 
     def initAssets(self):
         super().initAssets()
-        self.icons = QImage("icons/status_icons.png")
 
     def getHandleRect(self):
         return QRectF(
