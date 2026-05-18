@@ -9,7 +9,7 @@ from conn_sub_window import ConnSubWindow
 from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES, VERSION, GlobalSettingManager
-from conn_utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager
+from conn_utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager, easyError
 
 
 # images for the dark skin
@@ -281,6 +281,18 @@ class ConnectionWindow(NodeEditorWindow):
         self.mdiArea.setActiveSubWindow(existing)
 
         if self.maybeSave():
+            for edge in widget.scene.edges:
+                try:
+                    edge.remove()
+                except Exception as e: 
+                    easyError(e)
+
+            for node in widget.scene.nodes:
+                try:
+                    node.remove()
+                except Exception as e: 
+                    easyError(e)
+
             event.accept()
         else:
             event.ignore()

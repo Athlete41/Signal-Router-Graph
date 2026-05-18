@@ -9,7 +9,7 @@ from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_S
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
 from nodeeditor.utils import dumpException
 from nodeeditor.node_node import Node
-from conn_utils import logger, SimpleLogger
+from conn_utils import easyError, easyWarning, easyDebug
 
 DEBUG = False
 DEBUG_CONTEXT = False
@@ -40,19 +40,16 @@ class ConnSubWindow(NodeEditorWidget):
 
     def setViewportUpdateMode(self, mode):
         self.view.setViewportUpdateMode(mode)
-        logger.debug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
-        SimpleLogger.instance().debug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
+        easyDebug(f"{self.filename} 窗口: 设置视口更新模式为 {mode}")
 
     def setConnectionType(self, ctype):
-        logger.debug(f"{self.filename} 窗口: 重连类型{ctype}")
-        SimpleLogger.instance().debug(f"{self.filename} 窗口: 重连类型 {ctype}")
+        easyDebug(f"{self.filename} 窗口: 重连类型{ctype}")
         self.scene.reconnectAll(ctype)
 
     def getNodeClassFromData(self, data):
         if 'tppath' not in data: return Node
         if not isinstance(data['tppath'], (list, tuple)): 
-            SimpleLogger.warning(f"tppath 不是 list 或 tuple 类型, 当前值为 {data['tppath']}")
-            logger.warning(f"tppath 不是 list 或 tuple 类型, 当前值为 {data['tppath']}")
+            easyWarning(f"tppath 不是 list 或 tuple 类型, 当前值为 {data['tppath']}")
             return Node
         
         if isinstance(data['tppath'], list):
