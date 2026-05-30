@@ -287,7 +287,7 @@ class ConnectionWindow(NodeEditorWindow):
                 except Exception as e: 
                     easyError(e)
 
-            for node in widget.scene.nodes:
+            for node in widget.scene.nodes.copy():
                 try:
                     node.remove()
                 except Exception as e: 
