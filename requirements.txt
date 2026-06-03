@@ -1,0 +1,5 @@
+nodeeditor==0.9.15
+PyQt5==5.15.9
+pyqt5_sip==12.18.0
+QtPy==2.4.3
+numpy

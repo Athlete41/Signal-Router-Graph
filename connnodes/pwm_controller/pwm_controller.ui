@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PwmController</class>
+ <widget class="QWidget" name="PwmController">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>360</width>
+    <height>320</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>4</number>
+   </property>
+   <!-- ── 操作栏 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="opLayout">
+     <item>
+      <widget class="QPushButton" name="fetchBtn">
+       <property name="text">
+        <string>获取PWM信息</string>
+       </property>
+       <property name="minimumHeight">
+        <number>24</number>
+       </property>
+       <property name="maximumHeight">
+        <number>24</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="autoRefreshCheck">
+       <property name="text">
+        <string>定时刷新</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="intervalSpin">
+       <property name="suffix">
+        <string>ms</string>
+       </property>
+       <property name="minimum">
+        <number>100</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="singleStep">
+        <number>100</number>
+       </property>
+       <property name="value">
+        <number>1000</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="opSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 起始通道 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="baseLayout">
+     <item>
+      <widget class="QLabel" name="baseLabel">
+       <property name="text">
+        <string>起始通道:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="baseSpin">
+       <property name="toolTip">
+        <string>起始通道偏移量。base=0 → 控制 MCU 通道 0~3（面板显示 1~4），base=4 → 控制 MCU 通道 4~7（面板显示 5~8），以此类推</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>252</number>
+       </property>
+       <property name="singleStep">
+        <number>4</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="baseHintLabel">
+       <property name="text">
+        <string>→ 通道 1~4</string>
+       </property>
+       <property name="styleSheet">
+        <string>color: #888;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="baseSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 分隔线 ── -->
+   <item>
+    <widget class="Line" name="sep1">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="styleSheet">
+      <string>color: #404040;</string>
+     </property>
+    </widget>
+   </item>
+   <!-- ── 通道 1 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="ch1Layout">
+     <item>
+      <widget class="QLabel" name="ch1Label">
+       <property name="text">
+        <string>1</string>
+       </property>
+       <property name="minimumWidth">
+        <number>44</number>
+       </property>
+       <property name="maximumWidth">
+        <number>44</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="styleSheet">
+        <string>color: #5aadff; font-weight: bold; background: transparent;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="ch1Freq">
+       <property name="suffix">
+        <string> Hz</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="ch1DutySlider">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="ch1DutySpin">
+       <property name="suffix">
+        <string>%</string>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>100.0</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ch1Enable">
+       <property name="text">
+        <string>启用</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 通道 1~2 分隔 ── -->
+   <item>
+    <widget class="Line" name="sepCh2">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="styleSheet">
+      <string>color: #333;</string>
+     </property>
+    </widget>
+   </item>
+   <!-- ── 通道 2 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="ch2Layout">
+     <item>
+      <widget class="QLabel" name="ch2Label">
+       <property name="text">
+        <string>2</string>
+       </property>
+       <property name="minimumWidth">
+        <number>44</number>
+       </property>
+       <property name="maximumWidth">
+        <number>44</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="styleSheet">
+        <string>color: #5aadff; font-weight: bold; background: transparent;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="ch2Freq">
+       <property name="suffix">
+        <string> Hz</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="ch2DutySlider">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="ch2DutySpin">
+       <property name="suffix">
+        <string>%</string>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>100.0</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ch2Enable">
+       <property name="text">
+        <string>启用</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 通道 2~3 分隔 ── -->
+   <item>
+    <widget class="Line" name="sepCh3">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="styleSheet">
+      <string>color: #333;</string>
+     </property>
+    </widget>
+   </item>
+   <!-- ── 通道 3 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="ch3Layout">
+     <item>
+      <widget class="QLabel" name="ch3Label">
+       <property name="text">
+        <string>3</string>
+       </property>
+       <property name="minimumWidth">
+        <number>44</number>
+       </property>
+       <property name="maximumWidth">
+        <number>44</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="styleSheet">
+        <string>color: #5aadff; font-weight: bold; background: transparent;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="ch3Freq">
+       <property name="suffix">
+        <string> Hz</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="ch3DutySlider">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="ch3DutySpin">
+       <property name="suffix">
+        <string>%</string>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>100.0</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ch3Enable">
+       <property name="text">
+        <string>启用</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 通道 3~4 分隔 ── -->
+   <item>
+    <widget class="Line" name="sepCh4">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="styleSheet">
+      <string>color: #333;</string>
+     </property>
+    </widget>
+   </item>
+   <!-- ── 通道 4 ── -->
+   <item>
+    <layout class="QHBoxLayout" name="ch4Layout">
+     <item>
+      <widget class="QLabel" name="ch4Label">
+       <property name="text">
+        <string>4</string>
+       </property>
+       <property name="minimumWidth">
+        <number>44</number>
+       </property>
+       <property name="maximumWidth">
+        <number>44</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="styleSheet">
+        <string>color: #5aadff; font-weight: bold; background: transparent;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="ch4Freq">
+       <property name="suffix">
+        <string> Hz</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="ch4DutySlider">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="ch4DutySpin">
+       <property name="suffix">
+        <string>%</string>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>100.0</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ch4Enable">
+       <property name="text">
+        <string>启用</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <!-- ── 弹性空间 ── -->
+   <item>
+    <spacer name="middleSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <!-- ── 状态标签 ── -->
+   <item>
+    <widget class="QLabel" name="statusLabel">
+     <property name="text">
+      <string>就绪 — 点击「获取PWM信息」查询 MCU</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string>color: #888; font-size: 11px; padding: 2px;</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
