@@ -1,0 +1,80 @@
+{
+  "项目名称": "信号路由图编辑器 (SignalRouterGraph)",
+  "技术栈": "Python 3.10.11 + PyQt5 5.15.9 + nodeeditor 0.9.15",
+
+  "架构层次": [
+    {
+      "层": "第1层 — nodeeditor 外部框架",
+      "位置": "site-packages/nodeeditor/",
+      "提供": ["场景图管理", "QGraphicsItem 渲染", "序列化/反序列化骨架", "撤销/重做"],
+      "修改方式": "不直接改，继承后重写"
+    },
+    {
+      "层": "第2层 — 自定义核心基类",
+      "位置": "conn_base.py",
+      "核心类": {
+        "ConnNode": "所有节点的基类，管理信号/槽注册、端口配置",
+        "ConnEdge": "边的基类，管理 Qt 信号-槽的 connect/disconnect/reconnect",
+        "ConnScene": "场景基类，重连逻辑",
+        "ConnSocket": "端口，存储参数类型、工具提示",
+        "ConnGraphicsNode": "可调整大小的图形节点",
+        "ConnGraphicsSocket": "带文本标签的端口绘制",
+        "ConnGraphicsEdge": "带方向箭头的边绘制",
+        "ConnSceneClipboard": "复制粘贴板"
+      },
+      "修改影响": "⚠️ 修改此层会影响所有节点，需要充分测试"
+    },
+    {
+      "层": "第3层 — 应用窗口",
+      "位置": "conn_window.py / conn_sub_window.py",
+      "功能": ["MDI 主窗口", "Dock/菜单/工具栏", "拖放创建节点", "右键菜单", "文件 I/O", "标签页管理"],
+      "修改影响": "⚠️ 修改窗口布局或文件操作时涉及"
+    },
+    {
+      "层": "第4层 — 面板组件",
+      "位置": "conn_tool_panel.py / conn_nodes_panel.py / conn_global_setting_panel.py / conn_thread_panel.py",
+      "功能": ["侧边面板容器", "节点树（拖放创建）", "全局设置（连接类型、视口模式）", "线程计数显示"]
+    },
+    {
+      "层": "第5层 — 用户自定义节点",
+      "位置": "connnodes/",
+      "功能": "所有业务节点，通过 @register_node() 注册",
+      "修改影响": "✅ 增删改节点都在此层，不影响其他层"
+    },
+    {
+      "层": "第6层 — 工具类",
+      "位置": "conn_utils.py",
+      "提供": ["SimpleLogger — 单例 UI 日志器", "ThreadManager — 单例线程生命周期管理器"]
+    }
+  ],
+
+  "数据流": {
+    "方向": "信号驱动，非 eval 驱动",
+    "路径": "源节点 pyqtSignal → ConnEdge.connect() → 目标节点槽函数",
+    "跨线程": "全局连接类型 (Auto/Queued) 控制跨线程投递方式",
+    "握手示例 (示波器)": "工作线程 emit frameReady → 主线程渲染 → emit renderComplete → 工作线程继续"
+  },
+
+  "关键设计决策": [
+    "tppath 元组是节点的唯一标识，不可重名",
+    "端口顺序敏感：反序列化依赖声明顺序，新增端口必须追加到末尾",
+    "禁止循环连接：signal↔signal 和 slot↔slot 不允许",
+    "全局连接类型统一控制，不单独管理每条边",
+    "所有带 I/O 的节点采用 _Worker + QThread 多线程模式"
+  ],
+
+  "重要约束": [
+    "节点销毁必须重写 cleanup() 显式清理线程和子对象",
+    "多线程节点必须在 initUI() 中完成 QThread 创建和 moveToThread",
+    "区块连接 (BlockingQueuedConnection) 用于工作线程对象初始化",
+    "ThreadManager 必须注册所有 QThread 避免 GC 回收"
+  ],
+
+  "修改快速导航": {
+    "添加新节点": "参考 note/高层索引/节点操作指南.md",
+    "修改核心框架": "参考 note/高层索引/框架修改指南.md",
+    "修改 UI/面板": "conn_sub_window.py / conn_*_panel.py",
+    "修改样式": "qss/nodeeditor-dark.qss",
+    "编译 UI 文件": "运行 ui_to_pyqt5.bat"
+  }
+}

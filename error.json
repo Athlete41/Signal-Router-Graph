@@ -1,0 +1,57 @@
+{
+    "id": 2244442220064,
+    "scene_width": 64000,
+    "scene_height": 64000,
+    "nodes": [
+        {
+            "id": 2244442357712,
+            "title": "\u5f02\u5e38-\u672a\u6ce8\u518c\u4fe1\u53f7",
+            "pos_x": 338.0,
+            "pos_y": 58.0,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 2244442442624,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u5f02\u5e38-\u672a\u6ce8\u518c\u4fe1\u53f7"
+            ]
+        },
+        {
+            "id": 2244442444304,
+            "title": "\u6587\u672c\u663e\u793a\u5668",
+            "pos_x": 638.25,
+            "pos_y": 114.5,
+            "inputs": [
+                {
+                    "id": 2244442444688,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [],
+            "content": {},
+            "tppath": [
+                "\u6d4b\u8bd5",
+                "\u6587\u672c\u663e\u793a\u5668"
+            ]
+        }
+    ],
+    "edges": [
+        {
+            "id": 2244442448576,
+            "edge_type": 5,
+            "start": 2244442442624,
+            "end": 2244442444688
+        }
+    ]
+}

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SerialPort</class>
+ <widget class="QWidget" name="SerialPort">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>311</width>
+    <height>343</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="Layout_portName">
+     <item>
+      <widget class="QLabel" name="portNameSelecterLabel">
+       <property name="text">
+        <string>串口选择</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="portNameRefreshBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../resource/icon/refresh.png</normaloff>../../resource/icon/refresh.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="portNameSelecter"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="portOpenBtn">
+     <property name="text">
+      <string>开启</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../../resource/icon/deactive.png</normaloff>
+       <activeon>../../resource/icon/active.png</activeon>../../resource/icon/deactive.png</iconset>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_baudRate">
+     <item>
+      <widget class="QLabel" name="baudRateSelectLabel">
+       <property name="text">
+        <string>波特率</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="baudRateSelecter">
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_dataBits">
+     <item>
+      <widget class="QLabel" name="dataBitsSelectLabel">
+       <property name="text">
+        <string>数据位</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="dataBitsSelecter">
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_parity">
+     <item>
+      <widget class="QLabel" name="paritySelecterLabel">
+       <property name="text">
+        <string>检验位</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="paritySelecter">
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_stopBits">
+     <item>
+      <widget class="QLabel" name="stopBitsSelecterLabel">
+       <property name="text">
+        <string>停止位</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="stopBitsSelecter">
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_flowControl">
+     <item>
+      <widget class="QLabel" name="flowControlSelecterLabel">
+       <property name="text">
+        <string>流控</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="flowControlSelecter"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="FC_DTRCheckBox">
+     <property name="text">
+      <string>DTR</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="FC_RTSCheckBox">
+     <property name="text">
+      <string>RTS</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="dangerLabel">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="toolTip">
+      <string>无背压机制, 若是高速情况下开启某些日志可能导致UI卡死</string>
+     </property>
+     <property name="text">
+      <string>危险</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../../resource/icon/danger.png</normaloff>../../resource/icon/danger.png</iconset>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="Layout_danger">
+     <item>
+      <widget class="QCheckBox" name="infoLogBtn">
+       <property name="text">
+        <string>信息</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="warningLogBtn">
+       <property name="text">
+        <string>警告</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="errorLogBtn">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="text">
+        <string>错误</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
