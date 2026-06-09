@@ -16,7 +16,7 @@ set_node_display(
 @register_node()
 class OscilloscopeNode(ConnNode):
     tppath = ("可视化", "示波器")
-    icon = "icons/receiver.png"
+    icon = "icons/oscilloscope.png"
     name = "示波器"
     tooltip = (
         "示波器节点，接收 QByteArray 协议包，"
@@ -40,10 +40,18 @@ class OscilloscopeNode(ConnNode):
                     name="协议数据",
                     argsType=(QByteArray,)
                 ),
+                ConnSocketConf(
+                    socketType=1,
+                    key="writeJsonData",
+                    tooltip="接收 dict 格式波形数据: {点, 采样间隔_us, gap数}",
+                    name="JSON 数据",
+                    argsType=(dict,)
+                ),
             ]
         )
         # 注册工作线程对象的槽函数（跨线程由 AutoConnection 自动处理）
         self.registerSlot("writeData", self.content.sampler.writeData)
+        self.registerSlot("writeJsonData", self.content.sampler.writeJsonData)
 
     def initSettings(self):
         super().initSettings()

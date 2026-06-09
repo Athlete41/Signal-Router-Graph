@@ -1,0 +1,73 @@
+{
+    "id": 1803496378656,
+    "scene_width": 64000,
+    "scene_height": 64000,
+    "nodes": [
+        {
+            "id": 1803496482816,
+            "title": "\u793a\u6ce2\u5668",
+            "pos_x": 68.0,
+            "pos_y": -49.0,
+            "inputs": [
+                {
+                    "id": 1803496569872,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [],
+            "content": {},
+            "tppath": [
+                "\u53ef\u89c6\u5316",
+                "\u793a\u6ce2\u5668"
+            ],
+            "width": 600,
+            "height": 484,
+            "fps": 30,
+            "buffer_size": 10000,
+            "time_window": 1.0,
+            "amplification": 1.0,
+            "offset": 0.0,
+            "started": false
+        },
+        {
+            "id": 1803527789712,
+            "title": "\u4fe1\u53f7\u53d1\u751f\u5668",
+            "pos_x": -352.5,
+            "pos_y": 49.37500000000003,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 1803527790048,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6570\u636e\u6e90",
+                "\u4fe1\u53f7\u53d1\u751f\u5668"
+            ],
+            "width": 240,
+            "height": 304,
+            "freq": 1.0,
+            "amp": 1.0,
+            "sample_rate": 1000,
+            "packet_size": 100,
+            "waveform_type": 0,
+            "started": false
+        }
+    ],
+    "edges": [
+        {
+            "id": 1803527790912,
+            "edge_type": 5,
+            "start": 1803527790048,
+            "end": 1803496569872
+        }
+    ]
+}

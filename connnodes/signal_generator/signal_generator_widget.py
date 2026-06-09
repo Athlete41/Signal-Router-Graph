@@ -1,16 +1,17 @@
 """
 信号发生器节点 — 生成多种波形并按协议编码为 QByteArray 输出
 
-单线程，QTimer 驱动
+多线程：波形生成在工作线程执行，不阻塞主线程 UI
 支持波形类型：正弦波、方波、三角波、锯齿波
 """
 import math
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                              QDoubleSpinBox, QSpinBox, QPushButton,
                              QComboBox)
-from PyQt5.QtCore import pyqtSignal, QByteArray, QTimer
-
+from PyQt5.QtCore import (pyqtSignal, pyqtSlot, QByteArray, QTimer,
+                          QObject, QThread, QMetaObject, Qt)
 from conn_base import ConnNodeContentWidget
+from conn_utils import ThreadManager
 from connnodes.waveform_protocol import encode_packet
 
 
@@ -43,11 +44,140 @@ WAVEFORM_FUNCS = {
 }
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# 工作线程核心
+# ═══════════════════════════════════════════════════════════════════════
+
+class _SignalGenWorker(QObject):
+    """信号发生器工作线程 — 波形生成+定时器"""
+
+    dataReady = pyqtSignal(QByteArray)  # 跨线程发射到主线程
+    jsonReady = pyqtSignal(dict)        # 跨线程发射 dict 格式
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._onTick)
+        self._phase = 0.0
+
+        # 参数（从主线程同步）
+        self._wave_type = "正弦波"
+        self._freq = 1.0
+        self._amp = 1.0
+        self._sample_rate = 1000
+        self._packet_size = 100
+
+    # ── 参数更新槽（主线程通过信号跨线程调用） ──────────
+
+    @pyqtSlot(float)
+    def setFreq(self, freq: float):
+        self._freq = freq
+        self._restartIfActive()
+
+    @pyqtSlot(float)
+    def setAmp(self, amp: float):
+        self._amp = amp
+
+    @pyqtSlot(int)
+    def setSampleRate(self, rate: int):
+        self._sample_rate = rate
+        self._restartIfActive()
+
+    @pyqtSlot(int)
+    def setPacketSize(self, size: int):
+        self._packet_size = size
+        self._restartIfActive()
+
+    @pyqtSlot(str)
+    def setWaveType(self, wtype: str):
+        self._wave_type = wtype
+        self._restartIfActive()
+
+    @pyqtSlot()
+    def start(self):
+        """启动定时器，相位归零"""
+        self._phase = 0.0
+        interval_ms, _ = self._calcTiming()
+        self._timer.start(interval_ms)
+
+    @pyqtSlot()
+    def stop(self):
+        """停止定时器"""
+        self._timer.stop()
+
+    # ── 内部 ───────────────────────────────────────────
+
+    def _calcTiming(self):
+        """计算定时器间隔(ms)和每包数据点数
+
+        保证：
+            - 最小间隔 16ms（防止高采样率下 QTimer 过载）
+            - 数据速率与采样率匹配（间隔被压缩时放大包大小补偿）
+        Returns:
+            (interval_ms, packet_size)
+        """
+        sps = self._sample_rate
+        target_n = self._packet_size
+        ideal_ms = int(target_n / sps * 1000)
+        min_ms = 16
+        if ideal_ms >= min_ms:
+            return ideal_ms, target_n
+        scaled_n = int(sps * min_ms / 1000)
+        return min_ms, max(scaled_n, 1)
+
+    def _onTick(self):
+        freq = self._freq
+        amp = self._amp
+        sr = self._sample_rate
+        _, n = self._calcTiming()
+        wave_func = WAVEFORM_FUNCS.get(self._wave_type, _sine)
+
+        interval_us = int(1_000_000 / sr)
+
+        data = []
+        for _ in range(n):
+            data.append(amp * wave_func(self._phase))
+            self._phase += freq / sr
+            if self._phase >= 1.0:
+                self._phase -= 1.0
+
+        self.dataReady.emit(encode_packet(interval_us, data))
+        self.jsonReady.emit({
+            "点": data,
+            "采样间隔_us": interval_us,
+            "频率": freq,
+            "gap数": 0,
+        })
+
+    def _restartIfActive(self):
+        """运行中参数变更 → 相位归零 + 重置定时器"""
+        if self._timer.isActive():
+            self._phase = 0.0
+            interval_ms, _ = self._calcTiming()
+            self._timer.start(interval_ms)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 内容部件（主线程）
+# ═══════════════════════════════════════════════════════════════════════
+
 class SignalGeneratorContent(ConnNodeContentWidget):
-    """信号发生器内容部件"""
+    """信号发生器内容部件
+
+    管理工作线程生命周期，UI 控件通过信号桥接与工作线程通信。
+    """
     dataOutput = pyqtSignal(QByteArray)
+    jsonOutput = pyqtSignal(dict)
 
     def initUI(self):
+        # ── 工作线程初始化 ──
+        self._worker = _SignalGenWorker()
+        self._thread = QThread()
+        self._thread.start()
+        ThreadManager.instance().register_thread(self._thread)
+        self._worker.moveToThread(self._thread)
+
+        # ── UI 布局 ──
         layout = QVBoxLayout(self)
         layout.setSpacing(4)
 
@@ -126,19 +256,8 @@ class SignalGeneratorContent(ConnNodeContentWidget):
 
         layout.addStretch()
 
-        # ── 定时器 ──
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._onTick)
-
-        # ── 相位追踪 ──
-        self._phase = 0.0
-
-        # ── 信号 ──
-        self._startBtn.clicked.connect(self._onStartClicked)
-        self._freqSpin.valueChanged.connect(self._restartIfActive)
-        self._sampleRateSpin.valueChanged.connect(self._restartIfActive)
-        self._packetSizeSpin.valueChanged.connect(self._restartIfActive)
-        self._typeCombo.currentIndexChanged.connect(self._restartIfActive)
+        # ── 信号连接 ──
+        self._connectSignals()
 
         self.setStyleSheet("""
             QDoubleSpinBox, QSpinBox, QPushButton, QLabel {
@@ -146,6 +265,40 @@ class SignalGeneratorContent(ConnNodeContentWidget):
                 color: #e0e0e0;
                 border: 1px solid #404040;
                 padding: 2px 4px;
+            }
+            QDoubleSpinBox::up-button, QSpinBox::up-button {
+                subcontrol-origin: border;
+                subcontrol-position: top right;
+                width: 18px;
+                background-color: #353535;
+                border: 1px solid #505050;
+                border-left: none;
+                border-bottom: none;
+                border-top-right-radius: 3px;
+            }
+            QDoubleSpinBox::down-button, QSpinBox::down-button {
+                subcontrol-origin: border;
+                subcontrol-position: bottom right;
+                width: 18px;
+                background-color: #353535;
+                border: 1px solid #505050;
+                border-left: none;
+                border-top: none;
+                border-bottom-right-radius: 3px;
+            }
+            QDoubleSpinBox::up-arrow, QSpinBox::up-arrow {
+                width: 0;
+                height: 0;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 5px solid white;
+            }
+            QDoubleSpinBox::down-arrow, QSpinBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid white;
             }
             QPushButton:checked {
                 background-color: #005000;
@@ -156,63 +309,52 @@ class SignalGeneratorContent(ConnNodeContentWidget):
 
         self.resize(200, 240)
 
+    def _connectSignals(self):
+        """连接所有信号（主线程 ↔ 工作线程）"""
+        # worker 数据 → 主线程输出端口
+        self._worker.dataReady.connect(self._onDataReady)
+        self._worker.jsonReady.connect(self._onJsonReady)
+
+        # UI 控件 → worker 参数（跨线程，AutoConnection）
+        self._freqSpin.valueChanged.connect(self._worker.setFreq)
+        self._ampSpin.valueChanged.connect(self._worker.setAmp)
+        self._sampleRateSpin.valueChanged.connect(self._worker.setSampleRate)
+        self._packetSizeSpin.valueChanged.connect(self._worker.setPacketSize)
+        self._typeCombo.currentTextChanged.connect(self._worker.setWaveType)
+
+        # 启动/停止
+        self._startBtn.clicked.connect(self._onStartClicked)
+
     # ── 槽 ──
 
     def _onStartClicked(self, checked):
         if checked:
-            self._phase = 0.0
-            interval_ms, _ = self._calcTiming()
-            self._timer.start(interval_ms)
+            QMetaObject.invokeMethod(
+                self._worker, "start", Qt.QueuedConnection
+            )
             self._startBtn.setText("停止")
         else:
-            self._timer.stop()
+            QMetaObject.invokeMethod(
+                self._worker, "stop", Qt.QueuedConnection
+            )
             self._startBtn.setText("启动")
 
-    def _restartIfActive(self):
-        if self._timer.isActive():
-            self._phase = 0.0
-            interval_ms, _ = self._calcTiming()
-            self._timer.start(interval_ms)
+    @pyqtSlot(QByteArray)
+    def _onDataReady(self, data: QByteArray):
+        """工作线程数据到达 → 转发到节点输出端口"""
+        self.dataOutput.emit(data)
 
-    def _calcTiming(self):
-        """计算定时器间隔(ms)和每包数据点数
-
-        保证：
-            - 最小间隔 16ms（防止高采样率下 QTimer 过载）
-            - 数据速率与采样率匹配（间隔被压缩时放大包大小补偿）
-        Returns:
-            (interval_ms, packet_size)
-        """
-        sps = self._sampleRateSpin.value()
-        target_n = self._packetSizeSpin.value()
-        ideal_ms = int(target_n / sps * 1000)
-        min_ms = 16
-        if ideal_ms >= min_ms:
-            return ideal_ms, target_n
-        # 间隔过短，放大包大小以维持正确数据率
-        scaled_n = int(sps * min_ms / 1000)
-        return min_ms, max(scaled_n, 1)
-
-    def _onTick(self):
-        freq = self._freqSpin.value()
-        amp = self._ampSpin.value()
-        sr = self._sampleRateSpin.value()
-        interval_ms = self._timer.interval()
-        _, n = self._calcTiming()  # 用实时间隔算实际包大小
-        wave_func = WAVEFORM_FUNCS.get(
-            self._typeCombo.currentText(), _sine
-        )
-
-        interval_us = int(1_000_000 / sr)
-
-        data = []
-        for _ in range(n):
-            data.append(amp * wave_func(self._phase))
-            self._phase += freq / sr
-            if self._phase >= 1.0:
-                self._phase -= 1.0
-
-        self.dataOutput.emit(encode_packet(interval_us, data))
+    @pyqtSlot(dict)
+    def _onJsonReady(self, data: dict):
+        """工作线程 dict 数据到达 → 转发到节点输出端口"""
+        self.jsonOutput.emit(data)
 
     def cleanup(self):
-        self._timer.stop()
+        """清理工作线程"""
+        QMetaObject.invokeMethod(
+            self._worker, "stop", Qt.BlockingQueuedConnection
+        )
+        self._worker.deleteLater()
+        self._thread.quit()
+        self._thread.wait(3000)
+        self._thread.deleteLater()
