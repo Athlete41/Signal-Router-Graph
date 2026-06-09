@@ -5,9 +5,10 @@
     WaveformWidget          — 自定义波形绘制控件（带时间轴刻度）
     OscilloscopeContent     — 内容部件（含工作线程管理）
 """
+import math
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                              QSpinBox, QDoubleSpinBox, QPushButton, QWidget,
-                             QSizePolicy, QScrollBar, QGroupBox)
+                             QSizePolicy, QScrollBar, QGroupBox, QCheckBox)
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QMetaObject, QThread
 from PyQt5.QtGui import QPainter, QPen, QColor, QPainterPath, QFont
 
@@ -25,15 +26,74 @@ class WaveformWidget(QWidget):
 
     GRID_LINES = 4  # 水平和垂直网格线数量（5 个区间）
 
+    @staticmethod
+    def _nice_bounds(d_min: float, d_max: float, divisions: int = 4):
+        """计算覆盖数据范围的人类友好型坐标轴范围
+
+        保证步长是 1/2/5 × 10^k，而不是 0.6、0.7 这类非整数。
+
+        Returns:
+            (nice_min, nice_max, nice_step)
+        """
+        raw_range = d_max - d_min
+        if raw_range < 0.0001:
+            return -0.5, 0.5, 0.25
+
+        # 原始步长
+        raw_step = raw_range / divisions
+        exponent = math.floor(math.log10(raw_step))
+        mantissa = raw_step / (10 ** exponent)
+
+        # 吸附到 1/2/5
+        if mantissa < 1.5:
+            nice_step = 1.0
+        elif mantissa < 3.5:
+            nice_step = 2.0
+        elif mantissa < 7.5:
+            nice_step = 5.0
+        else:
+            nice_step = 10.0
+        nice_step *= 10 ** exponent
+
+        nice_min = math.floor(d_min / nice_step) * nice_step
+        nice_max = math.ceil(d_max / nice_step) * nice_step
+
+        # 保证至少有 divisions 个区间
+        if (nice_max - nice_min) / nice_step < divisions:
+            nice_max = nice_min + nice_step * divisions
+
+        return nice_min, nice_max, nice_step
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._data = []
         self._overwrite_region = ()          # () 或 (min_idx, max_idx) 在 data 中的索引
         self._overwrite_count = 0
         self._ms_per_div = 0.0
+        # Y 范围控制（None = 自动）
+        self._y_auto = True
+        self._y_min = None
+        self._y_max = None
         self.setMinimumSize(200, 150)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+
+    def setYRange(self, y_min=None, y_max=None, auto=True):
+        """设置 Y 轴显示范围
+
+        Args:
+            y_min: 下限（None 时自动）
+            y_max: 上限（None 时自动）
+            auto: True = 自动计算并吸附到友好值
+        """
+        self._y_auto = auto
+        if not auto:
+            self._y_min = y_min if y_min is not None else -5.0
+            self._y_max = y_max if y_max is not None else 5.0
+        else:
+            self._y_min = None
+            self._y_max = None
+        self.update()
 
     def setData(self, data, overwrite_count, overwrite_region, ms_per_div):
         """设置数据并触发重绘
@@ -89,18 +149,22 @@ class WaveformWidget(QWidget):
 
         # ── 计算 Y 轴范围（先算，后面网格和标签都要用） ──
         n = len(self._data)
-        if n >= 2:
+        if n >= 2 and self._y_auto:
             d_min = min(self._data)
             d_max = max(self._data)
-            d_range = d_max - d_min
-            if d_range < 0.001:
-                d_range = 1.0
-            d_pad = d_range * 0.1
-            d_min -= d_pad
-            d_max += d_pad
-            d_range = d_max - d_min
+            # 自动模式：吸附到友好数值
+            y_min, y_max, y_step = self._nice_bounds(d_min, d_max, self.GRID_LINES)
+        elif n >= 2 and not self._y_auto:
+            y_min = self._y_min
+            y_max = self._y_max
+            if y_max <= y_min:
+                y_min, y_max = -5.0, 5.0
+            y_step = (y_max - y_min) / self.GRID_LINES
         else:
-            d_min = d_max = d_range = 0.0
+            y_min = -1.0
+            y_max = 1.0
+            y_step = 0.5
+        d_range = y_max - y_min
 
         # ── 水平网格线 + Y 轴标签 ──
         small_font = QFont("monospace", 8)
@@ -111,9 +175,9 @@ class WaveformWidget(QWidget):
             painter.drawLine(margin_l, y, margin_l + plot_w, y)
 
             # 左侧 Y 轴数值标签
-            if n >= 2 and d_range > 0:
+            if d_range > 0:
                 normalized = 1.0 - i / self.GRID_LINES   # 顶部=1, 底部=0
-                value = d_min + normalized * d_range
+                value = y_min + normalized * d_range
                 # 根据数值大小自适应格式化
                 if abs(value) < 0.0001:
                     label = "0"
@@ -156,42 +220,39 @@ class WaveformWidget(QWidget):
             info_y += 16
 
         # 显示幅值/格
-        if n >= 2 and d_range > 0:
+        if d_range > 0:
             v_per_div = d_range / self.GRID_LINES
             painter.setPen(QPen(QColor(240, 192, 64), 1))
-            text = f"{v_per_div:.3f}V/div"
+            text = f"{v_per_div:.4g}V/div"
             painter.drawText(margin_l + 4, info_y,
                              plot_w - 8, 14,
                              Qt.AlignRight | Qt.AlignTop, text)
 
-        if n < 2:
-            painter.end()
-            return
-
         # ── 绘制波形 ──
-        path = QPainterPath()
-        first = True
-        for i, val in enumerate(self._data):
-            x = margin_l + (i / (n - 1)) * plot_w
-            normalized = (val - d_min) / d_range          # 0~1
-            y = margin_t + plot_h * (1.0 - normalized)    # Y 轴翻转
-            if first:
-                path.moveTo(x, y)
-                first = False
-            else:
-                path.lineTo(x, y)
+        if n >= 2:
+            path = QPainterPath()
+            first = True
+            for i, val in enumerate(self._data):
+                x = margin_l + (i / (n - 1)) * plot_w
+                normalized = (val - y_min) / d_range          # 0~1
+                y = margin_t + plot_h * (1.0 - normalized)    # Y 轴翻转
+                if first:
+                    path.moveTo(x, y)
+                    first = False
+                else:
+                    path.lineTo(x, y)
 
-        painter.setPen(QPen(QColor(0, 220, 0), 2))
-        painter.drawPath(path)
+            painter.setPen(QPen(QColor(0, 220, 0), 2))
+            painter.drawPath(path)
 
-        # ── 红色垂直线标记（缓冲区覆盖导致的不可信任区域边界） ──
-        if self._overwrite_region:
-            ov_min, ov_max = self._overwrite_region
-            painter.setPen(QPen(QColor(255, 50, 50), 3))
-            for boundary in (ov_min, ov_max):
-                if 0 <= boundary < n:
-                    x = int(margin_l + (boundary / (n - 1)) * plot_w)
-                    painter.drawLine(x, margin_t, x, margin_t + plot_h)
+            # ── 红色垂直线标记（缓冲区覆盖导致的不可信任区域边界） ──
+            if self._overwrite_region:
+                ov_min, ov_max = self._overwrite_region
+                painter.setPen(QPen(QColor(255, 50, 50), 3))
+                for boundary in (ov_min, ov_max):
+                    if 0 <= boundary < n:
+                        x = int(margin_l + (boundary / (n - 1)) * plot_w)
+                        painter.drawLine(x, margin_t, x, margin_t + plot_h)
 
         painter.end()
 
@@ -311,31 +372,64 @@ class OscilloscopeContent(ConnNodeContentWidget):
         # ── 垂直系统（幅值轴） ──
         self._vGroup = QGroupBox("垂直系统")
         self._vGroup.setObjectName("vGroup")
-        v_grid = QHBoxLayout(self._vGroup)
-        v_grid.setContentsMargins(6, 2, 6, 4)
-        v_grid.setSpacing(6)
+        v_main = QVBoxLayout(self._vGroup)
+        v_main.setContentsMargins(6, 2, 6, 2)
+        v_main.setSpacing(2)
 
-        v_grid.addWidget(QLabel("放大倍数:"))
+        # 第1行：自动范围 + Y 下限 + Y 上限
+        y_range_row = QHBoxLayout()
+        y_range_row.setSpacing(4)
+        self._yAutoCb = QCheckBox("自动")
+        self._yAutoCb.setChecked(True)
+        self._yAutoCb.setStyleSheet("color: #f0c040; border: none;")
+        y_range_row.addWidget(self._yAutoCb)
+
+        y_range_row.addWidget(QLabel("Y下限:"))
+        self._yMinSpin = QDoubleSpinBox()
+        self._yMinSpin.setRange(-10000.0, 10000.0)
+        self._yMinSpin.setValue(-5.0)
+        self._yMinSpin.setDecimals(3)
+        self._yMinSpin.setFixedWidth(85)
+        self._yMinSpin.setEnabled(False)
+        y_range_row.addWidget(self._yMinSpin)
+
+        y_range_row.addWidget(QLabel("Y上限:"))
+        self._yMaxSpin = QDoubleSpinBox()
+        self._yMaxSpin.setRange(-10000.0, 10000.0)
+        self._yMaxSpin.setValue(5.0)
+        self._yMaxSpin.setDecimals(3)
+        self._yMaxSpin.setFixedWidth(85)
+        self._yMaxSpin.setEnabled(False)
+        y_range_row.addWidget(self._yMaxSpin)
+
+        y_range_row.addStretch()
+        v_main.addLayout(y_range_row)
+
+        # 第2行：放大倍数 + 偏移
+        ctrl_row = QHBoxLayout()
+        ctrl_row.setSpacing(6)
+        ctrl_row.addWidget(QLabel("放大倍数:"))
         self._ampSpin = QDoubleSpinBox()
         self._ampSpin.setRange(0.01, 1000.0)
         self._ampSpin.setValue(1.0)
         self._ampSpin.setDecimals(3)
         self._ampSpin.setSingleStep(0.1)
         self._ampSpin.setFixedWidth(90)
-        v_grid.addWidget(self._ampSpin)
+        ctrl_row.addWidget(self._ampSpin)
 
-        v_grid.addSpacing(12)
+        ctrl_row.addSpacing(12)
 
-        v_grid.addWidget(QLabel("偏移:"))
+        ctrl_row.addWidget(QLabel("偏移:"))
         self._offsetSpin = QDoubleSpinBox()
         self._offsetSpin.setRange(-1000.0, 1000.0)
         self._offsetSpin.setValue(0.0)
         self._offsetSpin.setDecimals(3)
         self._offsetSpin.setSingleStep(0.1)
         self._offsetSpin.setFixedWidth(90)
-        v_grid.addWidget(self._offsetSpin)
+        ctrl_row.addWidget(self._offsetSpin)
 
-        v_grid.addStretch()
+        ctrl_row.addStretch()
+        v_main.addLayout(ctrl_row)
 
         layout.addWidget(self._vGroup)
 
@@ -493,14 +587,45 @@ class OscilloscopeContent(ConnNodeContentWidget):
         self._clearRequested.connect(self.sampler.clear)
         self._clearBtn.clicked.connect(self._onClearClicked)
 
+        # ── Y 范围控制 ──
+        self._yAutoCb.toggled.connect(self._onYAutoToggled)
+        self._yMinSpin.valueChanged.connect(self._onYRangeChanged)
+        self._yMaxSpin.valueChanged.connect(self._onYRangeChanged)
+
         # ── UI 控件 ──
         self._startBtn.clicked.connect(self._onStartClicked)
 
     # ── 槽函数 ──
 
+    def _onYAutoToggled(self, checked):
+        """自动 Y 范围切换：禁用/启用 Y 下限/上限 SpinBox"""
+        self._yMinSpin.setEnabled(not checked)
+        self._yMaxSpin.setEnabled(not checked)
+        self._onYRangeChanged()
+
+    def _onYRangeChanged(self):
+        """手动 Y 范围变更 → 更新波形"""
+        if self._yAutoCb.isChecked():
+            self._waveform.setYRange(auto=True)
+        else:
+            self._waveform.setYRange(
+                self._yMinSpin.value(),
+                self._yMaxSpin.value(),
+                auto=False,
+            )
+
     def _onFrameReady(self, data, overwrite_count, overwrite_region,
                       ms_per_div, scrollbar_max):
         """收到一帧数据：更新波形 + 滚动条 + 时间/格显示 → 通知下一帧"""
+        # 同步 Y 范围（新帧数据可能更新自动范围）
+        if self._yAutoCb.isChecked():
+            self._waveform.setYRange(auto=True)
+        else:
+            self._waveform.setYRange(
+                self._yMinSpin.value(),
+                self._yMaxSpin.value(),
+                auto=False,
+            )
         self._waveform.setData(data, overwrite_count,
                                 overwrite_region, ms_per_div)
 

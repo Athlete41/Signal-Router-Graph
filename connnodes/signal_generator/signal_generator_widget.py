@@ -161,7 +161,8 @@ class SignalGeneratorContent(ConnNodeContentWidget):
     def _onStartClicked(self, checked):
         if checked:
             self._phase = 0.0
-            self._timer.start(self._calcInterval())
+            interval_ms, _ = self._calcTiming()
+            self._timer.start(interval_ms)
             self._startBtn.setText("停止")
         else:
             self._timer.stop()
@@ -170,19 +171,34 @@ class SignalGeneratorContent(ConnNodeContentWidget):
     def _restartIfActive(self):
         if self._timer.isActive():
             self._phase = 0.0
-            self._timer.start(self._calcInterval())
+            interval_ms, _ = self._calcTiming()
+            self._timer.start(interval_ms)
 
-    def _calcInterval(self) -> int:
-        """定时器间隔（ms），保证每包有 packet_size 个采样点"""
+    def _calcTiming(self):
+        """计算定时器间隔(ms)和每包数据点数
+
+        保证：
+            - 最小间隔 16ms（防止高采样率下 QTimer 过载）
+            - 数据速率与采样率匹配（间隔被压缩时放大包大小补偿）
+        Returns:
+            (interval_ms, packet_size)
+        """
         sps = self._sampleRateSpin.value()
-        n = self._packetSizeSpin.value()
-        return max(int(n / sps * 1000), 1)
+        target_n = self._packetSizeSpin.value()
+        ideal_ms = int(target_n / sps * 1000)
+        min_ms = 16
+        if ideal_ms >= min_ms:
+            return ideal_ms, target_n
+        # 间隔过短，放大包大小以维持正确数据率
+        scaled_n = int(sps * min_ms / 1000)
+        return min_ms, max(scaled_n, 1)
 
     def _onTick(self):
         freq = self._freqSpin.value()
         amp = self._ampSpin.value()
         sr = self._sampleRateSpin.value()
-        n = self._packetSizeSpin.value()
+        interval_ms = self._timer.interval()
+        _, n = self._calcTiming()  # 用实时间隔算实际包大小
         wave_func = WAVEFORM_FUNCS.get(
             self._typeCombo.currentText(), _sine
         )
