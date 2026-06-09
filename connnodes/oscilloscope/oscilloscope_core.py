@@ -59,6 +59,10 @@ class RingBuffer:
         self._count = 0
         self._overwrite_count = 0
 
+    def get_all_ordered(self) -> list[float]:
+        """公开接口：返回按时间顺序排列的所有数据（从最旧到最新）"""
+        return self._get_ordered()
+
     def _get_ordered(self) -> list[float]:
         """返回按时间顺序排列的数据（从最旧到最新）"""
         if self._count == 0:

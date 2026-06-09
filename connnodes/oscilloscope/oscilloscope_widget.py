@@ -5,10 +5,12 @@
     WaveformWidget          — 自定义波形绘制控件（带时间轴刻度 + gap 显示）
     OscilloscopeContent     — 内容部件（含工作线程管理 + 历史 RingBuffer）
 """
+import json
 import math
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                              QSpinBox, QDoubleSpinBox, QPushButton, QWidget,
-                             QSizePolicy, QScrollBar, QGroupBox, QCheckBox)
+                             QSizePolicy, QScrollBar, QGroupBox, QCheckBox,
+                             QFileDialog)
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QMetaObject, QThread
 from PyQt5.QtGui import QPainter, QPen, QColor, QFont
 
@@ -355,15 +357,6 @@ class OscilloscopeContent(ConnNodeContentWidget):
 
         h_grid.addStretch()
 
-        h_grid.addWidget(QLabel("时间/格:"))
-        self._timePerDivLabel = QLabel("---")
-        self._timePerDivLabel.setFixedWidth(100)
-        self._timePerDivLabel.setAlignment(Qt.AlignCenter)
-        self._timePerDivLabel.setStyleSheet(
-            "color: #64c8ff; border: none; font-size: 12px; font-weight: bold;"
-        )
-        h_grid.addWidget(self._timePerDivLabel)
-
         layout.addWidget(self._hGroup)
 
         # ── 垂直系统（幅值轴） ──
@@ -442,6 +435,10 @@ class OscilloscopeContent(ConnNodeContentWidget):
         self._clearBtn = QPushButton("清空")
         self._clearBtn.setFixedWidth(55)
         action_row.addWidget(self._clearBtn)
+
+        self._saveBtn = QPushButton("保存")
+        self._saveBtn.setFixedWidth(55)
+        action_row.addWidget(self._saveBtn)
 
         action_row.addStretch()
 
@@ -590,6 +587,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
         # ── UI 控件 ──
         self._startBtn.clicked.connect(self._onStartClicked)
         self._clearBtn.clicked.connect(self._onClearClicked)
+        self._saveBtn.clicked.connect(self._onSaveClicked)
 
     # ── 内部计算 ───────────────────────────────────────
 
@@ -651,17 +649,6 @@ class OscilloscopeContent(ConnNodeContentWidget):
             self._scrollbar.setValue(scrollbar_max)
             self._scrollbar_value = scrollbar_max
         self._scrollbar.blockSignals(False)
-
-        # 更新时间/格显示
-        if ms_per_div > 0:
-            if ms_per_div < 1:
-                self._timePerDivLabel.setText(f"{ms_per_div*1000:.0f}μs/div")
-            elif ms_per_div < 1000:
-                self._timePerDivLabel.setText(f"{ms_per_div:.1f}ms/div")
-            else:
-                self._timePerDivLabel.setText(f"{ms_per_div/1000:.2f}s/div")
-        else:
-            self._timePerDivLabel.setText("---")
 
         # 发送到波形显示（NaN 魔法数字 gap 标记已在 data 中）
         self._waveform.setData(data, ms_per_div)
@@ -746,6 +733,27 @@ class OscilloscopeContent(ConnNodeContentWidget):
         self._history_rb.clear()
         self._waveform.setData([], 0.0)
         self._clearRequested.emit()
+
+    def _onSaveClicked(self):
+        """将所有历史数据保存为 JSON 文件（dict 格式）"""
+        data = self._history_rb.get_all_ordered()
+        if not data:
+            return
+
+        fp, _ = QFileDialog.getSaveFileName(
+            self, "保存波形数据", "",
+            "JSON 文件 (*.json);;所有文件 (*)"
+        )
+        if not fp:
+            return
+
+        record = {
+            "点": data,
+            "采样间隔_us": self._sampling_interval_us,
+            "gap数": 0,
+        }
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
 
     def cleanup(self):
         """清理工作线程和资源"""
