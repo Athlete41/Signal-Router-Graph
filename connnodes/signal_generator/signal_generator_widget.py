@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import pyqtSignal, QByteArray, QTimer
 
 from conn_base import ConnNodeContentWidget
-from connnodes.protocol import encode_packet
+from connnodes.waveform_protocol import encode_packet
 
 
 WAVEFORM_TYPES = ["正弦波", "方波", "三角波", "锯齿波"]

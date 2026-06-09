@@ -51,6 +51,7 @@ Signal-Router-Graph/
 ├── connnodes/                   # 用户自定义节点（第5层）
 │   ├── __init__.py              # 自动发现子模块
 │   ├── waveform_protocol.py     # 波形采样协议编解码（信号发生器↔示波器）
+│   ├── waveform_protocol.md     # 📄 协议格式文档
 │   ├── test_node.py             # 测试节点
 │   ├── data_sender_node.py      # 数据发送器（timer驱动）
 │   ├── data_receiver.py         # 数据接收器
