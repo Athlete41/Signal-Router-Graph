@@ -8,7 +8,7 @@ from nodeeditor.node_socket import RIGHT_CENTER
 @register_node()
 class SignalGeneratorNode(ConnNode):
     tppath = ("数据源", "信号发生器")
-    icon = "icons/emitter.png"
+    icon = "icons/signal_generator.png"
     name = "信号发生器"
     tooltip = "生成正弦波/方波/三角波/锯齿波信号，按协议编码为 QByteArray 输出，可调频率/幅值/采样率"
     conn_title = "信号发生器"
@@ -25,9 +25,17 @@ class SignalGeneratorNode(ConnNode):
                     name="协议数据",
                     argsType=(QByteArray,)
                 ),
+                ConnSocketConf(
+                    socketType=2,
+                    key="jsonOutput",
+                    tooltip="dict 格式波形数据: {点, 采样间隔_us, 频率, gap数}",
+                    name="JSON 数据",
+                    argsType=(dict,)
+                ),
             ]
         )
         self.registerSignal("dataOutput", self.content.dataOutput)
+        self.registerSignal("jsonOutput", self.content.jsonOutput)
 
     def initSettings(self):
         super().initSettings()
