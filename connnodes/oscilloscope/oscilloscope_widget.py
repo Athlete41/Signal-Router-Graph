@@ -104,6 +104,14 @@ class WaveformWidget(QWidget):
         # 拖拽状态
         self._dragging = False
 
+        # min-max 抽取缓存：避免 Y-only 变化时重复计算每列极值
+        # 缓存键: (_data_generation, n, screen_w)，任一变化则失效
+        self._data_generation = -1       # 当前数据的代数（由外部 setData 传入）
+        self._minmax_cache = []          # [(vmin, vmax) | None, ...] 每列一对
+        self._minmax_cache_gen = -1      # 缓存对应的 data_generation
+        self._minmax_cache_n = 0
+        self._minmax_cache_sw = 0
+
         self.setMinimumSize(200, 150)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setAttribute(Qt.WA_OpaquePaintEvent, True)
@@ -111,19 +119,21 @@ class WaveformWidget(QWidget):
     # ── 公共接口 ──────────────────────────────────────────────
 
     def setData(self, data: list[float], sampling_interval_us: int,
-                time_window_s: float = 0.0):
+                time_window_s: float = 0.0, data_generation: int = -1):
         """设置波形数据并触发重绘（纯原始数据，不做加工）
 
         Args:
             data: 浮点数列表（含 NaN 魔法数字标记的 gap 点）
             sampling_interval_us: 采样间隔（微秒），用于时间标签计算
             time_window_s: 用户设定的时间窗口（秒），用于网格标签，与实际数据量无关
+            data_generation: 数据代数计数器，变化时自动失效 min-max 缓存
         """
         self._data = data
         if sampling_interval_us > 0:
             self._sampling_interval_us = sampling_interval_us
         if time_window_s > 0:
             self._time_window_s = time_window_s
+        self._data_generation = data_generation
         self.update()
 
     def setYRange(self, y_min: float, y_max: float):
@@ -357,20 +367,44 @@ class WaveformWidget(QWidget):
             painter.setPen(wave_pen)
 
             if samples_per_pixel > 3:
-                # ── Min-max 抽取：遍历 screen_w 列，list slicing 在 C 层完成 ──
-                ratio = n / screen_w
+                # ── Min-max 抽取（带缓存）：遍历 screen_w 列 ──
+                # 缓存键: _data_generation 变 → 数据变了；n/screen_w 变 → 列边界变了
+                cache_hit = (self._minmax_cache_gen == self._data_generation
+                             and self._minmax_cache_n == n
+                             and self._minmax_cache_sw == screen_w
+                             and len(self._minmax_cache) == screen_w)
+
+                if not cache_hit:
+                    # 缓存失效 → 计算每列 (vmin, vmax)，单次遍历零分配
+                    ratio = n / screen_w
+                    self._minmax_cache = []
+                    for col in range(screen_w):
+                        i0 = int(col * ratio)
+                        i1 = int((col + 1) * ratio)
+                        vmin, vmax = float('inf'), float('-inf')
+                        for v in data[i0:i1]:
+                            if not math.isnan(v):
+                                if v < vmin: vmin = v
+                                if v > vmax: vmax = v
+                        if vmin == float('inf'):
+                            self._minmax_cache.append(None)  # 全 NaN 列
+                        else:
+                            self._minmax_cache.append((vmin, vmax))
+                    self._minmax_cache_gen = self._data_generation
+                    self._minmax_cache_n = n
+                    self._minmax_cache_sw = screen_w
+
+                # 使用缓存绘制（命中时仅重算 Y 坐标）
                 prev_x = prev_max_y = prev_min_y = None
+                ratio = n / screen_w
                 for col in range(screen_w):
-                    i0 = int(col * ratio)
-                    i1 = int((col + 1) * ratio)
-                    chunk = data[i0:i1]
-                    valid = [v for v in chunk if not math.isnan(v)]
-                    if not valid:
+                    entry = self._minmax_cache[col]
+                    if entry is None:
                         prev_x = prev_max_y = prev_min_y = None
                         continue
-                    vmin, vmax = min(valid), max(valid)
+                    vmin, vmax = entry
                     # 列中心对应的时间 → X 坐标（时间映射）
-                    t_col = (i0 + i1) / 2.0 * interval_us
+                    t_col = (col + 0.5) * ratio * interval_us
                     x = int(margin_l + (1.0 + (t_col - t_right) / total_time_us) * plot_w)
                     y0 = int(margin_t + plot_h * (1.0 - (vmax - y_min) / d_range))
                     y1 = int(margin_t + plot_h * (1.0 - (vmin - y_min) / d_range))
@@ -473,6 +507,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
         self._y_range = 10.0        # Y 范围：幅值跨度
         self._y_offset = 0.0        # Y 偏移：幅值中心位置
         self._sampling_interval_us = 1000
+        self._data_generation = 0   # 数据代数计数器，每次 _render_frame 递增（WaveformWidget 缓存键）
 
         # ── UI 布局 ──
         layout = QVBoxLayout(self)
@@ -840,11 +875,16 @@ class OscilloscopeContent(ConnNodeContentWidget):
 
     # ── 渲染 ───────────────────────────────────────────
 
-    def _render_frame(self):
+    def _render_frame(self, data_changed=True):
         """从历史 RingBuffer 读取视口对应的数据，无加工地传给 WaveformWidget 绘制
 
         NaN 魔法数字（gap 标记）已直接在历史缓冲区中，
         WaveformWidget 检测到 NaN 后跳过整段不画。
+
+        Args:
+            data_changed: True → X 轴/数据变化，调用 setData + setYRange（async update）
+                          False → Y-only 变化，跳过 setData，setYRange + repaint（同步绘制，
+                                  防止 Qt paint 合并导致 _data_generation 变化而 cache miss）
         """
         total = self._history_rb.count
         if total <= 0 or self._sampling_interval_us <= 0:
@@ -900,9 +940,17 @@ class OscilloscopeContent(ConnNodeContentWidget):
         # 同步垂直滚动条
         self._syncVScrollbar()
 
-        # 纯原始数据发送到波形显示（无 amp/offset 加工）
-        self._waveform.setData(data, self._sampling_interval_us, self._time_window_s)
-        self._waveform.setYRange(y_min, y_max)
+        if data_changed:
+            # 数据变化路径：setData + setYRange → update() 异步绘制
+            self._waveform.setData(data, self._sampling_interval_us, self._time_window_s,
+                                   data_generation=self._data_generation)
+            self._waveform.setYRange(y_min, y_max)
+        else:
+            # Y-only 路径：数据未变，跳过 setData（保持 WaveformWidget._data 和
+            # _data_generation 不变，让 paintEvent 的 min-max 缓存命中），
+            # 用 repaint() 同步绘制，防止 Qt paint 合并导致 gen 变化
+            self._waveform.setYRange(y_min, y_max)
+            self._waveform.repaint()
 
     # ── 槽函数 ─────────────────────────────────────────
 
@@ -927,7 +975,8 @@ class OscilloscopeContent(ConnNodeContentWidget):
         # 写入历史缓冲区
         self._history_rb.write_batch(data)
 
-        # 渲染当前帧
+        # 渲染当前帧（新数据 → 递增代数，失效 min-max 缓存）
+        self._data_generation += 1
         self._render_frame()
 
         # 通知工作线程：渲染完成
@@ -936,12 +985,14 @@ class OscilloscopeContent(ConnNodeContentWidget):
     def _onBufferSizeChanged(self, size: int):
         """调整历史 RingBuffer 大小"""
         self._history_rb.resize(max(100, size))
+        self._data_generation += 1
         self._render_frame()
 
     def _onTimeWindowChanged(self, value: float):
         """时间窗口 spinbox 改变 → 设置主参数，重新导出可见点数"""
         self._time_window_s = max(0.001, value)
         self._view_count = self._countFromTimeWindow()
+        self._data_generation += 1
         self._render_frame()
 
     def _countFromTimeWindow(self):
@@ -955,32 +1006,33 @@ class OscilloscopeContent(ConnNodeContentWidget):
             return
         max_offset = max(0, total - self._view_count)
         self._view_offset = max(0, max_offset - value)
+        self._data_generation += 1
         self._render_frame()
 
     def _onYAutoToggled(self, checked):
         self._yRangeSpin.setEnabled(not checked)
         self._yOffsetSpin.setEnabled(not checked)
         self._vScrollbar.setEnabled(not checked)
-        self._render_frame()
+        self._render_frame(data_changed=False)
 
     def _onYRangeSpinChanged(self, value: float):
         """Y 范围 spinbox 变化 → 更新 _y_range"""
         if not self._yAutoCb.isChecked():
             self._y_range = max(0.001, value)
-        self._render_frame()
+        self._render_frame(data_changed=False)
 
     def _onYOffsetSpinChanged(self, value: float):
         """Y 偏移 spinbox 变化 → 更新 _y_offset"""
         if not self._yAutoCb.isChecked():
             self._y_offset = value
-        self._render_frame()
+        self._render_frame(data_changed=False)
 
     def _onVScrollChanged(self, value: int):
         """垂直滚动条变化 → 更新 _y_offset"""
         if not self._yAutoCb.isChecked():
             vr = max(0.001, self._y_range * 5)
             self._y_offset = value / 10000.0 * vr
-        self._render_frame()
+        self._render_frame(data_changed=False)
 
     def _onSampleFreqChanged(self, freq_hz: float):
         """用户手动设置采样频率 → 更新采样间隔（备用默认值）"""
@@ -988,6 +1040,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
         if interval_us != self._sampling_interval_us:
             self._sampling_interval_us = interval_us
             self._view_count = self._countFromTimeWindow()
+            self._data_generation += 1
             self._render_frame()
 
     def _updateSwatchHighlight(self, active_idx: int):
@@ -1032,6 +1085,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
             return
 
         # X 方向平移（改变 _view_offset，即 X offset）
+        old_offset = self._view_offset
         max_offset = max(0, total - self._view_count)
         self._view_offset = int(max(0, min(self._view_offset + dx_data, max_offset)))
 
@@ -1040,7 +1094,11 @@ class OscilloscopeContent(ConnNodeContentWidget):
             self._yAutoCb.setChecked(False)
         self._y_offset += dy_data
 
-        self._render_frame()
+        # X 轴变化 → 递增代数以失效 min-max 缓存
+        x_changed = self._view_offset != old_offset
+        if x_changed:
+            self._data_generation += 1
+        self._render_frame(data_changed=x_changed)
 
     def _onWaveformZoom(self, factor: float, cx_ratio: float, cy_ratio: float):
         """滚轮缩放视口
@@ -1061,6 +1119,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
 
         if modifiers & Qt.ControlModifier:
             # ── Y 轴缩放（Ctrl+wheel — 改变 _y_range） ──
+            # Y-only 变化，不递增 data_generation — min-max 缓存命中
             self._yAutoCb.setChecked(False)
             # 光标处的数据值
             vy = self._y_offset + (cy_ratio - 0.5) * self._y_range
@@ -1068,6 +1127,7 @@ class OscilloscopeContent(ConnNodeContentWidget):
             self._y_range = max(0.001, old_range / factor)
             # 调整 offset 保持光标位置不变
             self._y_offset = vy - (cy_ratio - 0.5) * self._y_range
+            self._render_frame(data_changed=False)
         else:
             # ── X 轴缩放（wheel — 改变时间窗口） ──
             self._time_window_s = max(0.001, self._time_window_s / factor)
@@ -1080,8 +1140,9 @@ class OscilloscopeContent(ConnNodeContentWidget):
             self._view_offset = int(full_cx - cx_ratio * new_count)
             max_offset = max(0, total - new_count)
             self._view_offset = max(0, min(self._view_offset, max_offset))
-
-        self._render_frame()
+            # X 轴变化 → 递增代数以失效 min-max 缓存
+            self._data_generation += 1
+            self._render_frame(data_changed=True)
 
     def _onStartClicked(self, checked):
         """启动/停止工作线程的帧定时器"""
