@@ -343,52 +343,47 @@ class WaveformWidget(QWidget):
 
         # ── 绘制波形 ──
         if n >= 2:
-            # 时间轴映射：数据点 i 的时间 = i * interval_us（微秒）
-            # 最右边的点（i=n-1）始终对齐右边缘，时间窗外的点被推到左侧屏幕外
+            # 时间轴参数：_render_frame 确保 data ≈ visible window，n * interval ≈ total_time
             interval_us = self._sampling_interval_us
             total_time_us = max(1.0, self._time_window_s * 1_000_000)
             t_right = (n - 1) * interval_us  # 最右数据点的时间（微秒）
 
-            screen_w = self._screen_plot_width()
-            if n > screen_w * 3:
-                # ── Min-max 抽取模式（数据点数 > 屏幕像素 ×3） ──
-                # 抽取最多画 3×screen_w 条线，低于此阈值用逐点连线更高效
+            screen_w = max(1, self._screen_plot_width())
+            # 每像素列覆盖的时间 / 采样间隔 = 平均每列采样点数；>3 启用 min-max
+            dt_per_pixel = total_time_us / screen_w
+            samples_per_pixel = dt_per_pixel / max(1, interval_us)
+
+            wave_pen = QPen(self._wave_color, self._wave_line_width)
+            painter.setPen(wave_pen)
+
+            if samples_per_pixel > 3:
+                # ── Min-max 抽取：遍历 screen_w 列，list slicing 在 C 层完成 ──
                 ratio = n / screen_w
                 prev_x = prev_max_y = prev_min_y = None
-
-                wave_pen = QPen(self._wave_color, self._wave_line_width)
-                painter.setPen(wave_pen)
                 for col in range(screen_w):
                     i0 = int(col * ratio)
                     i1 = int((col + 1) * ratio)
                     chunk = data[i0:i1]
-                    # NaN 是 gap 标记，必须过滤否则 min/max 返回 NaN
                     valid = [v for v in chunk if not math.isnan(v)]
                     if not valid:
                         prev_x = prev_max_y = prev_min_y = None
                         continue
                     vmin, vmax = min(valid), max(valid)
-                    # X 坐标：用列中心的时间位置映射到像素，不依赖 n 均摊
-                    t_col_center = (i0 + i1) / 2.0 * interval_us
-                    x = int(margin_l + (1.0 + (t_col_center - t_right) / total_time_us) * plot_w)
+                    # 列中心对应的时间 → X 坐标（时间映射）
+                    t_col = (i0 + i1) / 2.0 * interval_us
+                    x = int(margin_l + (1.0 + (t_col - t_right) / total_time_us) * plot_w)
                     y0 = int(margin_t + plot_h * (1.0 - (vmax - y_min) / d_range))
                     y1 = int(margin_t + plot_h * (1.0 - (vmin - y_min) / d_range))
-
-                    # 竖线（列内 min→max）
                     painter.drawLine(x, y0, x, y1)
-                    # 包络线（连前一列：max→max，min→min）
                     if prev_x is not None:
                         painter.drawLine(prev_x, prev_max_y, x, y0)
                         painter.drawLine(prev_x, prev_min_y, x, y1)
                     prev_x, prev_max_y, prev_min_y = x, y0, y1
             else:
-                # ── 逐点连线模式（数据点数 ≤ 像素宽度，放大时平滑曲线） ──
-                wave_pen = QPen(self._wave_color, self._wave_line_width)
-                painter.setPen(wave_pen)
+                # ── 逐点连线：数据稀疏，逐点绘制 ──
                 for i in range(n - 1):
                     if math.isnan(data[i]) or math.isnan(data[i + 1]):
-                        continue  # 任一端点是 gap → 跳过整段
-                    # X 坐标：用实际时间位置映射，不依赖 n 均摊
+                        continue
                     t_i = i * interval_us
                     t_i1 = (i + 1) * interval_us
                     x0 = int(margin_l + (1.0 + (t_i - t_right) / total_time_us) * plot_w)
