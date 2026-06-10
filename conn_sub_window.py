@@ -1,9 +1,10 @@
-from qtpy.QtGui import QIcon, QPixmap
-from qtpy.QtCore import QDataStream, QIODevice, Qt
-from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu, QGraphicsView
+from qtpy.QtGui import QIcon, QPixmap, QWheelEvent
+from qtpy.QtCore import QDataStream, QIODevice, QPointF, Qt
+from qtpy.QtWidgets import QAction, QApplication, QGraphicsProxyWidget, QMenu, QGraphicsView
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE, GlobalSettingManager
 from conn_base import ConnScene
+from nodeeditor.node_graphics_view import QDMGraphicsView
 from nodeeditor.node_editor_widget import NodeEditorWidget
 from nodeeditor.node_edge import EDGE_TYPE_DIRECT, EDGE_TYPE_BEZIER, EDGE_TYPE_SQUARE
 from nodeeditor.node_graphics_view import MODE_EDGE_DRAG
@@ -15,8 +16,48 @@ DEBUG = False
 DEBUG_CONTEXT = False
 
 
+class ConnDMGraphicsView(QDMGraphicsView):
+
+    def __init__(self, grScene, parent = None):
+        super().__init__(grScene, parent)
+
+    def wheelEvent(self, event):
+        """在画布缩放之前，优先把滚轮事件转发给 WaveformWidget"""
+        # 遍历光标下的所有 QGraphicsItem，查找 WaveformWidget
+        for item in self.items(event.pos()):
+            if isinstance(item, QGraphicsProxyWidget):
+                proxy_widget = item.widget()
+                if proxy_widget is None:
+                    continue
+                # 坐标转到 proxy widget 空间，用 childAt 定位实际子控件
+                local = proxy_widget.mapFromGlobal(event.globalPos())
+                child = proxy_widget.childAt(local)
+                while child is not None:
+                    if child.__class__.__name__ == 'WaveformWidget':
+                        # 坐标转到 WaveformWidget 局部空间
+                        wf_local = child.mapFromGlobal(event.globalPos())
+                        new_ev = QWheelEvent(
+                            QPointF(wf_local),
+                            QPointF(event.globalPos()),
+                            event.pixelDelta(),
+                            event.angleDelta(),
+                            event.buttons(),
+                            event.modifiers(),
+                            event.phase(),
+                            event.inverted(),
+                            event.source(),
+                        )
+                        QApplication.sendEvent(child, new_ev)
+                        event.accept()
+                        return
+                    child = child.parentWidget()
+        # 不在 WaveformWidget 上 → 默认画布缩放
+        super().wheelEvent(event)
+
+
 class ConnSubWindow(NodeEditorWidget):
     Scene_class = ConnScene
+    GraphicsView_class = ConnDMGraphicsView
 
     def __init__(self):
         super().__init__()

@@ -61,9 +61,14 @@ class OscilloscopeNode(ConnNode):
         res = super().serialize()
         res["fps"] = self.content._fpsSpin.value()
         res["buffer_size"] = self.content._bufferSpin.value()
+        res["temp_buffer_size"] = self.content._tempBufferSpin.value()
+        res["sample_freq_hz"] = self.content._sampleFreqSpin.value()
         res["time_window"] = self.content._timeWindowSpin.value()
-        res["amplification"] = self.content._ampSpin.value()
-        res["offset"] = self.content._offsetSpin.value()
+        res["view_offset"] = self.content._view_offset
+        res["y_range"] = self.content._y_range
+        res["y_offset"] = self.content._y_offset
+        res["wave_line_width"] = self.content._lineWidthSpin.value()
+        res["wave_color"] = self.content._waveform._wave_color.name()
         res["started"] = self.content._startBtn.isChecked()
         return res
 
@@ -71,9 +76,33 @@ class OscilloscopeNode(ConnNode):
         res = super().deserialize(data, hashmap, restore_id)
         self.content._fpsSpin.setValue(data.get("fps", 30))
         self.content._bufferSpin.setValue(data.get("buffer_size", 1000))
+        self.content._tempBufferSpin.setValue(data.get("temp_buffer_size", 5000))
+        # 采样频率：向后兼容旧 key (sample_freq_khz 单位为 kHz)
+        if "sample_freq_hz" in data:
+            self.content._sampleFreqSpin.setValue(data["sample_freq_hz"])
+        elif "sample_freq_khz" in data:
+            self.content._sampleFreqSpin.setValue(data["sample_freq_khz"] * 1000.0)
+        else:
+            self.content._sampleFreqSpin.setValue(1000.0)
         self.content._timeWindowSpin.setValue(data.get("time_window", 1.0))
-        self.content._ampSpin.setValue(data.get("amplification", 1.0))
-        self.content._offsetSpin.setValue(data.get("offset", 0.0))
+        self.content._view_offset = data.get("view_offset", 0)
+
+        # Y 轴：向后兼容旧文件（view_y_min/max）
+        if "y_range" in data and "y_offset" in data:
+            self.content._y_range = data["y_range"]
+            self.content._y_offset = data["y_offset"]
+        else:
+            vy_min = data.get("view_y_min", -5.0)
+            vy_max = data.get("view_y_max", 5.0)
+            self.content._setYFromMinMax(vy_min, vy_max)
+        self.content._yRangeSpin.setValue(self.content._y_range)
+        self.content._yOffsetSpin.setValue(self.content._y_offset)
+
+        # 波形样式
+        self.content._lineWidthSpin.setValue(data.get("wave_line_width", 2))
+        wave_color_hex = data.get("wave_color", "#00dc00")
+        self.content.setWaveColorFromHex(wave_color_hex)
+
         started = data.get("started", False)
         self.content._startBtn.setChecked(started)
         if started:
