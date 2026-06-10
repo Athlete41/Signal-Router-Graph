@@ -73,7 +73,7 @@ class RingBuffer:
         return self._buffer[self._write_idx:] + self._buffer[:self._write_idx]
 
     def read_frame(self, visible_count: int, scroll_offset: int):
-        """读取可见窗口内的数据快照
+        """读取可见窗口内的数据快照（直接从环形缓冲区切片，避免全量拷贝）
 
         Args:
             visible_count: 希望获取的数据点数
@@ -83,9 +83,7 @@ class RingBuffer:
             (data, overwrite_count, scrollbar_max, frame_start)
             frame_start: 返回数据在 ordered 中的起始索引
         """
-        ordered = self._get_ordered()
-        total = len(ordered)
-
+        total = self._count
         if total == 0:
             return [], self._overwrite_count, 0, 0
 
@@ -95,7 +93,19 @@ class RingBuffer:
 
         start = scrollbar_max - actual_offset  # scroll_offset=0 → 显示最新
         start = max(0, start)
-        data = ordered[start:start + vc]
+
+        # 直接从环形缓冲区切片，只拷贝需要的 vc 个元素（避免全量 100K 拷贝）
+        if self._count < self.capacity:
+            # 缓冲区未满，数据从索引 0 开始线性排列
+            data = self._buffer[start:start + vc]
+        else:
+            # 缓冲区已满，数据从 _write_idx 开始（最旧），可能回绕
+            idx0 = (self._write_idx + start) % self.capacity
+            if idx0 + vc <= self.capacity:
+                data = self._buffer[idx0:idx0 + vc]
+            else:
+                n1 = self.capacity - idx0
+                data = self._buffer[idx0:] + self._buffer[:vc - n1]
 
         return data, self._overwrite_count, scrollbar_max, start
 
