@@ -47,8 +47,6 @@ class PWMControllerNode(ConnNode):
 
     NodeContent_class = PwmControllerWidget
 
-    CHANNEL_COUNT = 4
-
     def __init__(self, scene):
         super().__init__(scene,
             slotsConf=[
@@ -114,51 +112,48 @@ class PWMControllerNode(ConnNode):
         """追踪每路输出端口连接状态"""
         super().onEdgeConnectionChanged(new_edge)
         # outputs[0]~[3] 对应 ch1_send~ch4_send
-        for i in range(self.CHANNEL_COUNT):
+        for i in range(self.content.CHANNEL_COUNT):
             if i < len(self.outputs):
-                edge_count = len(self.outputs[i].edges)
-                self.content.setChOutputConnected(i, edge_count > 0)
+                self.content.setChOutputConnected(i)
         self._updateFetchButtonState()
 
     def _updateFetchButtonState(self):
         """检查是否至少有一个输出端口已连接"""
         has_any = any(
             len(self.outputs[i].edges) > 0
-            for i in range(min(self.CHANNEL_COUNT, len(self.outputs)))
+            for i in range(min(self.content.CHANNEL_COUNT, len(self.outputs)))
         )
-        self.content._fetchBtn.setEnabled(has_any)
+        self.content.ui.fetchBtn.setEnabled(has_any)
         if not has_any:
-            self.content._autoRefreshCheck.setChecked(False)
+            self.content.ui.autoRefreshCheck.setChecked(False)
             self.content._autoFetchTimer.stop()
-            self.content._statusLabel.setText("未连接 — 请先连接至少一个发送端口")
-            self.content._statusLabel.setStyleSheet(
-                "color: #e84; font-size: 11px; padding: 2px;")
+            self.content._updateStatus("未连接 — 请先连接至少一个发送端口", "disconnected")
 
     def serialize(self):
         res = super().serialize()
         # 保存 4 路通道的 UI 状态
         res["pwm_channels"] = self.content.getChannelsData()
         # 保存定时刷新设置
-        res["auto_refresh"] = self.content._autoRefreshCheck.isChecked()
-        res["refresh_interval"] = self.content._intervalSpin.value()
+        res["auto_refresh"] = self.content.ui.autoRefreshCheck.isChecked()
+        res["refresh_interval"] = self.content.ui.intervalSpin.value()
         # 保存起始通道偏移
-        res["base_channel"] = self.content._baseSpin.value()
+        res["base_channel"] = self.content.ui.baseSpin.value()
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=True):
         res = super().deserialize(data, hashmap, restore_id)
         # 恢复起始通道（需在恢复通道数据之前）
         base = data.get("base_channel", 0)
-        self.content._baseSpin.setValue(base)  # 触发 _onBaseChannelChanged → 更新标题
+        self.content.ui.baseSpin.setValue(base)  # 触发 _onBaseChannelChanged → 更新标签
         # 恢复通道 UI（不发送命令）
         channels_data = data.get("pwm_channels", [])
         if channels_data:
             self.content.restoreFromSerializedData(channels_data)
         # 恢复定时刷新设置
         interval = data.get("refresh_interval", 1000)
-        self.content._intervalSpin.setValue(interval)
+        self.content.ui.intervalSpin.setValue(interval)
         auto_refresh = data.get("auto_refresh", False)
         if auto_refresh:
             # 延迟重新启用（等连接恢复后用户手动开启）
-            self.content._autoRefreshCheck.setChecked(False)
+            self.content.ui.autoRefreshCheck.setChecked(False)
         return res
