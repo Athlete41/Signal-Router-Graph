@@ -33,7 +33,7 @@ set_node_display(
 @register_node()
 class PWMControllerNode(ConnNode):
     tppath = ("控制", "PWM控制器")
-    icon = "icons/signal_generator.png"
+    icon = "icons/pwm.png"
     name = "PWM控制器"
     tooltip = (
         "PWM 控制器节点（固定 4 路），通过串口与 MCU 通信。\n"
