@@ -15,15 +15,15 @@ set_node_display(
 
 @register_node()
 class OscilloscopeNode(ConnNode):
-    tppath = ("可视化", "示波器")
+    tppath = ("可视化", "示波器V2")
     icon = "icons/oscilloscope.png"
-    name = "示波器"
+    name = "示波器V2"
     tooltip = (
         "示波器节点，接收 QByteArray 协议包，"
         "协议格式: [帧头2B][采样间隔4B][数据数2B][float32数组][校验1B]；"
         "支持放大倍数/偏移调节，多线程环形缓冲区 + 帧同步"
     )
-    conn_title = "示波器"
+    conn_title = "示波器V2"
 
     NodeContent_class = OscilloscopeContent
 

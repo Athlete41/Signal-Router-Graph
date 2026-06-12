@@ -7,11 +7,11 @@ from nodeeditor.node_socket import RIGHT_CENTER
 
 @register_node()
 class SignalGeneratorNode(ConnNode):
-    tppath = ("数据源", "信号发生器")
+    tppath = ("数据源", "信号发生器V2")
     icon = "icons/signal_generator.png"
-    name = "信号发生器"
+    name = "信号发生器V2"
     tooltip = "生成正弦波/方波/三角波/锯齿波信号，按协议编码为 QByteArray 输出，可调频率/幅值/采样率"
-    conn_title = "信号发生器"
+    conn_title = "信号发生器V2"
 
     NodeContent_class = SignalGeneratorContent
 
