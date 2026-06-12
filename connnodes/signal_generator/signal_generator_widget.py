@@ -52,7 +52,6 @@ class _SignalGenWorker(QObject):
     """信号发生器工作线程 — 波形生成+定时器"""
 
     dataReady = pyqtSignal(QByteArray)  # 跨线程发射到主线程
-    jsonReady = pyqtSignal(dict)        # 跨线程发射 dict 格式
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -142,12 +141,6 @@ class _SignalGenWorker(QObject):
                 self._phase -= 1.0
 
         self.dataReady.emit(encode_packet(interval_us, data))
-        self.jsonReady.emit({
-            "点": data,
-            "采样间隔_us": interval_us,
-            "频率": freq,
-            "gap数": 0,
-        })
 
     def _restartIfActive(self):
         """运行中参数变更 → 相位归零 + 重置定时器"""
@@ -167,7 +160,6 @@ class SignalGeneratorContent(ConnNodeContentWidget):
     管理工作线程生命周期，UI 控件通过信号桥接与工作线程通信。
     """
     dataOutput = pyqtSignal(QByteArray)
-    jsonOutput = pyqtSignal(dict)
 
     def initUI(self):
         # ── 工作线程初始化 ──
@@ -313,7 +305,6 @@ class SignalGeneratorContent(ConnNodeContentWidget):
         """连接所有信号（主线程 ↔ 工作线程）"""
         # worker 数据 → 主线程输出端口
         self._worker.dataReady.connect(self._onDataReady)
-        self._worker.jsonReady.connect(self._onJsonReady)
 
         # UI 控件 → worker 参数（跨线程，AutoConnection）
         self._freqSpin.valueChanged.connect(self._worker.setFreq)
@@ -343,11 +334,6 @@ class SignalGeneratorContent(ConnNodeContentWidget):
     def _onDataReady(self, data: QByteArray):
         """工作线程数据到达 → 转发到节点输出端口"""
         self.dataOutput.emit(data)
-
-    @pyqtSlot(dict)
-    def _onJsonReady(self, data: dict):
-        """工作线程 dict 数据到达 → 转发到节点输出端口"""
-        self.jsonOutput.emit(data)
 
     def cleanup(self):
         """清理工作线程"""

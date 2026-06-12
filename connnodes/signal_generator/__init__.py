@@ -25,17 +25,9 @@ class SignalGeneratorNode(ConnNode):
                     name="协议数据",
                     argsType=(QByteArray,)
                 ),
-                ConnSocketConf(
-                    socketType=2,
-                    key="jsonOutput",
-                    tooltip="dict 格式波形数据: {点, 采样间隔_us, 频率, gap数}",
-                    name="JSON 数据",
-                    argsType=(dict,)
-                ),
             ]
         )
         self.registerSignal("dataOutput", self.content.dataOutput)
-        self.registerSignal("jsonOutput", self.content.jsonOutput)
 
     def initSettings(self):
         super().initSettings()
