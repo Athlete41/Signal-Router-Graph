@@ -50,28 +50,7 @@ Signal-Router-Graph/
 ├── conn_utils.py                # 工具类 - 日志+线程管理（第6层）
 ├── connnodes/                   # 用户自定义节点（第5层）
 │   ├── __init__.py              # 自动发现子模块
-│   ├── waveform_protocol.py     # 波形采样协议编解码（信号发生器↔示波器）
-│   ├── waveform_protocol.md     # 📄 协议格式文档
-│   ├── test_node.py             # 测试节点
-│   ├── data_sender_node.py      # 数据发送器（timer驱动）
-│   ├── data_receiver.py         # 数据接收器
-│   ├── serialport/              # 串口节点（多线程）
-│   │   ├── __init__.py
-│   │   ├── serialport_widget.py
-│   │   └── serialport.py
-│   ├── network/                 # TCP客户端/服务端（多线程）
-│   │   ├── __init__.py
-│   │   ├── tcp_client_widget.py
-│   │   ├── tcp_server_widget.py
-│   │   ├── tcp_client_core.py
-│   │   └── tcp_server_core.py
-│   ├── oscilloscope/            # 示波器节点（多线程+环形缓冲区）
-│   │   ├── __init__.py
-│   │   ├── oscilloscope_widget.py
-│   │   └── oscilloscope_core.py
-│   └── signal_generator/        # 信号发生器（单线程）
-│       ├── __init__.py
-│       └── signal_generator_widget.py
+│   └── ...                      # 节点扩展目录，按需添加
 ├── qss/                         # 样式表
 ├── icons/                       # 图标
 ├── note/                        # 🤚 用户个人笔记（Claude 不可修改）
@@ -328,11 +307,11 @@ class MyContent(ConnNodeContentWidget):
 
 ### 4.3 数据输入/输出类型参考
 
-| 类型 | 用途 | 使用节点 |
-|---|---|---|
-| `QByteArray` | 二进制数据 / 协议包 | 发送器、TCP、串口、信号发生器、示波器 |
-| `str` | 文本字符串 | TCP 文本发送 |
-| `float` | 数值数据 | 可选 |
+| 类型 | 用途 |
+|---|---|
+| `QByteArray` | 二进制数据 / 协议包 |
+| `str` | 文本字符串 |
+| `float` | 数值数据 |
 
 ### 4.4 修改节点的注意事项
 
@@ -343,20 +322,7 @@ class MyContent(ConnNodeContentWidget):
 | 删除端口 | 反序列化旧文件会失败（端口数量不匹配） |
 | 修改端口 key | registerSignal/registerSlot 的 key 必须同步修改 |
 
-### 4.5 已有节点速查
-
-| tppath | 文件 | 说明 |
-|---|---|---|
-| `("数据源", "发送器")` | `data_sender_node.py` | 发送 QByteArray/str，定时器驱动 |
-| `("数据源", "接收器")` | `data_receiver.py` | 接收并显示文本 |
-| `("数据源", "TCP客户端")` | `network/__init__.py` | TCP 客户端（多线程） |
-| `("数据源", "TCP服务端")` | `network/__init__.py` | TCP 服务端（多线程） |
-| `("数据源", "信号发生器")` | `signal_generator/__init__.py` | 正弦波/方波/三角波/锯齿波发生器 |
-| `("可视化", "示波器")` | `oscilloscope/__init__.py` | 接收 QByteArray → 解析 → 波形显示（多线程） |
-| `("测试目录", "文本输入")` | `test_node.py` | 简单文本输入 |
-| `("测试目录", "文本显示")` | `test_node.py` | 简单文本显示 |
-
-### 4.6 调试技巧
+### 4.5 调试技巧
 
 | 问题 | 排查方法 |
 |---|---|
