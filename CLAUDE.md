@@ -190,7 +190,7 @@ GlobalSettingManager                  # 全局配置单例
 工作线程（每个 I/O 节点一个）
   ├── 核心 I/O 对象（TcpClient / SerialPort / OscilloscopeSampler）
   ├── 通过 _Worker.init* 创建（BlockingQueuedConnection）
-  └── 信号自动跨线程投递（AutoConnection）
+  └── 信号自动跨线程投递（节点内部信号用默认 AutoConnection，图边连接由全局配置决定）
 ```
 
 #### 关键模式：_Worker + QThread
@@ -343,7 +343,7 @@ class MyContent(ConnNodeContentWidget):
 | 节点不出现 | 检查 `@register_node()` 是否添加，`tppath` 是否与已有节点冲突 |
 | 端口连不上 | 检查两端的 `argsType` 是否完全一致 |
 | 信号没触发 | 检查 `registerSignal` 的 key 是否与 `signalsConf` 匹配 |
-| 跨线程问题 | 用 `AutoConnection`（默认），确保槽函数是 QObject 方法 |
+| 跨线程问题 | 确保槽函数是 QObject 方法（框架约束，与连接类型无关） |
 | 销毁时报错 | 检查 `cleanup()` 是否清理了线程和子对象 |
 
 ---

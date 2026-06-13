@@ -248,7 +248,7 @@ class MyDeviceNode(ConnNode):
                 ),
             ]
         )
-        # 注册工作线程对象的信号和槽（跨线程由 AutoConnection 自动处理）
+        # 注册工作线程对象的信号和槽引用（实际连接类型由全局配置决定）
         self.registerSignal("received", self.content.core.received)
         self.registerSlot("sendData", self.content.core.sendData)
 
@@ -322,6 +322,7 @@ class MyDeviceContent(ConnNodeContentWidget):
         # ── 4. 连接跨线程信号 ──
         # 注意：信号-槽连接在对象初始化完成后进行，
         # 使用 AutoConnection（默认），Qt 自动处理跨线程投递
+        # 注：此处是节点内部信号连接，图边连接由全局配置控制
         self.core.ready.connect(self._onReady)
         self.btn.clicked.connect(self._onBtnClicked)
 

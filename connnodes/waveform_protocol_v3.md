@@ -119,7 +119,7 @@ if result is not None:
   │ qba = encode_packet(interval, data, channel_id=n)
   │ emit dataOutput(qba)  →  pyqtSignal(QByteArray)
   ▼
-ConnEdge (跨线程/同线程 AutoConnection)
+ConnEdge（连接类型由全局配置决定：Auto 或 Queued）
   │
   ▼
 示波器 V3 OscilloscopeSampler.writeData(qba)
