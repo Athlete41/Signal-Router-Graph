@@ -53,7 +53,7 @@ class DataReceiverContent(ConnNodeContentWidget):
 
 @register_node()
 class DataReceiverNode(ConnNode):
-    tppath = ("数据源", "接收器")
+    tppath = ("可视化", "接收器")
     icon = "icons/receiver.png"
     name = "接收器"
     tooltip = "可以接收 QByteArray 类型数据并解析为 utf-8 文本字符串"
