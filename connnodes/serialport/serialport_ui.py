@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'G:\Project\SignalRouterGraph\connnodes\serialport\serialport.ui'
+# Form implementation generated from reading ui file 'G:\ai-workspace\Signal-Router-Graph\connnodes\serialport\serialport.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -37,7 +37,7 @@ class Ui_SerialPort(object):
         self.portNameRefreshBtn.setStyleSheet("")
         self.portNameRefreshBtn.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("G:\\Project\\SignalRouterGraph\\connnodes\\serialport\\../../resource/icon/refresh.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("G:\\ai-workspace\\Signal-Router-Graph\\connnodes\\serialport\\../../resource/icon/refresh.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.portNameRefreshBtn.setIcon(icon)
         self.portNameRefreshBtn.setObjectName("portNameRefreshBtn")
         self.Layout_portName.addWidget(self.portNameRefreshBtn)
@@ -47,8 +47,8 @@ class Ui_SerialPort(object):
         self.verticalLayout.addLayout(self.Layout_portName)
         self.portOpenBtn = QtWidgets.QPushButton(SerialPort)
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("G:\\Project\\SignalRouterGraph\\connnodes\\serialport\\../../resource/icon/deactive.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        icon1.addPixmap(QtGui.QPixmap("G:\\Project\\SignalRouterGraph\\connnodes\\serialport\\../../resource/icon/active.png"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon1.addPixmap(QtGui.QPixmap("G:\\ai-workspace\\Signal-Router-Graph\\connnodes\\serialport\\../../resource/icon/deactive.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap("G:\\ai-workspace\\Signal-Router-Graph\\connnodes\\serialport\\../../resource/icon/active.png"), QtGui.QIcon.Active, QtGui.QIcon.On)
         self.portOpenBtn.setIcon(icon1)
         self.portOpenBtn.setCheckable(True)
         self.portOpenBtn.setObjectName("portOpenBtn")
@@ -107,7 +107,7 @@ class Ui_SerialPort(object):
         self.dangerLabel = QtWidgets.QPushButton(SerialPort)
         self.dangerLabel.setEnabled(True)
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("G:\\Project\\SignalRouterGraph\\connnodes\\serialport\\../../resource/icon/danger.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap("G:\\ai-workspace\\Signal-Router-Graph\\connnodes\\serialport\\../../resource/icon/danger.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.dangerLabel.setIcon(icon2)
         self.dangerLabel.setCheckable(False)
         self.dangerLabel.setObjectName("dangerLabel")
@@ -149,7 +149,7 @@ class Ui_SerialPort(object):
         self.FC_DTRCheckBox.setText(_translate("SerialPort", "DTR"))
         self.FC_RTSCheckBox.setText(_translate("SerialPort", "RTS"))
         self.dangerLabel.setToolTip(_translate("SerialPort", "无背压机制, 若是高速情况下开启某些日志可能导致UI卡死"))
-        self.dangerLabel.setText(_translate("SerialPort", "危险"))
+        self.dangerLabel.setText(_translate("SerialPort", "日志选项"))
         self.infoLogBtn.setText(_translate("SerialPort", "信息"))
         self.warningLogBtn.setText(_translate("SerialPort", "警告"))
         self.errorLogBtn.setText(_translate("SerialPort", "错误"))

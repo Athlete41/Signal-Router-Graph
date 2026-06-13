@@ -181,7 +181,7 @@
       <string>无背压机制, 若是高速情况下开启某些日志可能导致UI卡死</string>
      </property>
      <property name="text">
-      <string>危险</string>
+      <string>日志选项</string>
      </property>
      <property name="icon">
       <iconset>
