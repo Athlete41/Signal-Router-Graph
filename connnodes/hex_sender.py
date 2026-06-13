@@ -112,25 +112,40 @@ class HexSenderContent(ConnNodeContentWidget):
 
     def _onBrowseFile(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "选择二进制文件", "",
-            "二进制文件 (*.bin *.dat);;所有文件 (*)"
+            self, "选择文件", "",
+            "Hex文本文件 (*.hex.txt *.hex *.txt);;二进制文件 (*.bin *.dat);;所有文件 (*)"
         )
         if file_path:
             self.filePathEdit.setText(file_path)
 
     def _onFilePathChanged(self, path: str):
         """文件路径变更 — 加载文件内容（不会锁定编辑器）"""
-        if path:
+        if not path:
+            return
+
+        # 判断文件类型：hex 文本文件直接加载内容，二进制文件转换为 hex 字符串
+        if path.lower().endswith(('.hex.txt', '.hex', '.txt')):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                if content:
+                    self.hexEdit.setPlainText(content)
+            except Exception as e:
+                from conn_utils import SimpleLogger
+                SimpleLogger.instance().easyWarning(
+                    f"Hex发送器: 无法读取文本文件 {path}: {e}"
+                )
+                self.filePathEdit.setText("")
+        else:
             try:
                 with open(path, "rb") as f:
                     raw = f.read()
-                # 转换为大写 Hex 字符串，空格分隔
                 hex_str = " ".join(f"{b:02X}" for b in raw)
                 self.hexEdit.setPlainText(hex_str)
             except Exception as e:
                 from conn_utils import SimpleLogger
                 SimpleLogger.instance().easyWarning(
-                    f"Hex发送器: 无法读取文件 {path}: {e}"
+                    f"Hex发送器: 无法读取二进制文件 {path}: {e}"
                 )
                 self.filePathEdit.setText("")
 
