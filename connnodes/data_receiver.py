@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QTextBrowser, QSpinBox, QVBoxLayout, QLabel, QHBoxLayout
+from qtpy.QtWidgets import QTextBrowser, QSpinBox, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 from qtpy.QtGui import QTextCursor
 from PyQt5.QtCore import QByteArray
 
@@ -29,6 +29,11 @@ class DataReceiverContent(ConnNodeContentWidget):
         self.maxLineSpinBox.valueChanged.connect(self.maxLineSpinBoxHandler)
 
         self.resize(200, 200)
+
+
+        clearBtn = QPushButton("清除", self)
+        clearBtn.clicked.connect(self.textBrowser.clear)
+        layout.addWidget(clearBtn)
 
 
     def maxLineSpinBoxHandler(self, value: int):
