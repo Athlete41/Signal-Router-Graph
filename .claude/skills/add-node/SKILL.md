@@ -14,7 +14,7 @@ description: >
 
 | 模式 | 适用场景 | 参考实现 |
 |---|---|---|
-| **简单节点（单文件）** | 无 I/O、无线程，纯 UI 或 timer 驱动 | `test_node.py`、`data_sender_node.py`、`data_receiver.py`、`signal_generator/` |
+| **简单节点（单文件）** | 无 I/O、无线程，纯 UI 或 timer 驱动 | `test_node.py`、`data_sender_node.py`、`data_receiver.py` |
 | **多线程节点（子目录）** | 有持续 I/O（串口、TCP、采样），需工作线程 | `serialport/`（最佳参考）、`oscilloscope/`、`network/` |
 
 ## 步骤
@@ -47,7 +47,6 @@ description: >
 **参考文件：**
 - `connnodes/test_node.py` — 最简单的信号/槽示例
 - `connnodes/data_sender_node.py` — timer 驱动 + 多端口示例
-- `connnodes/signal_generator/` — timer 驱动，单端口输出
 
 #### 多线程节点（子目录）
 
