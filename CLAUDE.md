@@ -165,6 +165,20 @@ GlobalSettingManager                  # 全局配置单例
    └── Node.remove() → content.cleanup() → 移除所有边
 ```
 
+### 信号传递类型行为（实证结论）
+
+**行为取决于信号声明的类型，而非连接方式。**
+
+| 信号类型 | 传的值类型 | 行为 |
+|----------|-----------|------|
+| `pyqtSignal(list)` | list | 深拷贝 |
+| `pyqtSignal(dict)` | dict | 引用传递 |
+| `pyqtSignal(object)` | list | 引用传递 |
+| `pyqtSignal(object)` | dict | 引用传递 |
+| `pyqtSignal(object)` | numpy.ndarray | 引用传递 |
+
+见 `note/test_cross_thread_array_结论.md`（实测数据）
+
 ### 线程模型
 
 ```
@@ -412,5 +426,6 @@ class MyContent(ConnNodeContentWidget):
 | `note/nodeeditor0.9.15特性笔记.md` | nodeeditor 框架研究笔记 |
 | `note/test_disconnect.py` | 信号 disconnect 行为测试脚本 |
 | `note/test_emit.py` | 跨线程 emit 投递策略测试脚本 |
+| `note/test_cross_thread_array_结论.md` | PyQt5 跨线程信号传递行为实证结论（list/dict/ndarray） |
 
 > 节点相关设计文档随对应节点放在各自目录下，如 `connnodes/oscilloscope/示波器节点设计文档.md`
