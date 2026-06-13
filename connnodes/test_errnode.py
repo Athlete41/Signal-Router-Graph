@@ -4,7 +4,7 @@ from conn_base import ConnNode, ConnSocketConf
 @register_node()
 class Test_Error_UnregisteredSignalNode(ConnNode):
     tppath = ("测试", "异常-未注册信号")
-    icon = "icons/emitter.png"
+    icon = "icons/test.png"
     name = "异常-未注册信号"
     tooltip = "未调用 self.registerSignal 注册信号"
     conn_title = "异常-未注册信号"

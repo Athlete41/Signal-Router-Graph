@@ -36,7 +36,7 @@ class Test_TextInputContent(ConnNodeContentWidget):
 @register_node()
 class Test_TextInputNode(ConnNode):
     tppath = ("测试", "文本输入器")
-    icon = "icons/emitter.png"
+    icon = "icons/test.png"
     name = "文本输入器"
     tooltip = "可以编辑文本并自动发送文本"
     conn_title = "文本输入器"
@@ -74,7 +74,7 @@ class Test_TextShowContent(ConnNodeContentWidget):
 @register_node()
 class Test_TextShowNode(ConnNode):
     tppath = ("测试", "文本显示器")
-    icon = "icons/receiver.png"
+    icon = "icons/test.png"
     name = "文本显示器"
     tooltip = "可以显示文本"
     conn_title = "文本显示器"
