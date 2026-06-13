@@ -115,7 +115,7 @@ class Ui_SerialPort(object):
         self.Layout_danger = QtWidgets.QHBoxLayout()
         self.Layout_danger.setObjectName("Layout_danger")
         self.infoLogBtn = QtWidgets.QCheckBox(SerialPort)
-        self.infoLogBtn.setChecked(True)
+        self.infoLogBtn.setChecked(False)
         self.infoLogBtn.setObjectName("infoLogBtn")
         self.Layout_danger.addWidget(self.infoLogBtn)
         self.warningLogBtn = QtWidgets.QCheckBox(SerialPort)
