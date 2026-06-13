@@ -9,8 +9,8 @@ from conn_sub_window import ConnSubWindow
 from conn_tool_panel import QDMToolPanel
 from nodeeditor.utils import dumpException, pp
 from conn_conf import CONN_NODES, VERSION, GlobalSettingManager
-from conn_utils import SimpleLogger, SimpleLoggerBrowser, logger, LEVEL, logging, ThreadManager, easyError
-
+from conn_utils import SimpleLogger, logger, LEVEL, logging, ThreadManager, easyError
+from conn_simplelogger_panel import QDMSimpleLoggerPanel
 
 # images for the dark skin
 import qss.nodeeditor_dark_resources
@@ -253,7 +253,7 @@ class ConnectionWindow(NodeEditorWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.toolPanelDock)
 
     def createSimpleLoggerDock(self):
-        self.simpleLoggerBrowser = SimpleLoggerBrowser()
+        self.simpleLoggerBrowser = QDMSimpleLoggerPanel()
         SimpleLogger.instance().newNotify.connect(self.simpleLoggerBrowser.updateNewMsg)
         
         self.simpleLoggerDock = QDockWidget(f"简单日志 - {logging.getLevelName(LEVEL)}")

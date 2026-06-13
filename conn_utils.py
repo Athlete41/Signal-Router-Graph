@@ -37,7 +37,6 @@ log_file = Path(__file__).parent.parent / "app.log"
 logger, listener = _setup_logger(log_file)
 
 from PyQt5.QtCore import QObject, pyqtSignal
-from qtpy.QtWidgets import QTextBrowser
 
 class SimpleLogger(QObject):
     """
@@ -74,9 +73,6 @@ class SimpleLogger(QObject):
     def msg(self, msg: str) -> None:
         self.newNotify.emit(msg)
 
-class SimpleLoggerBrowser(QTextBrowser):
-    def updateNewMsg(self, msg: str) -> None:
-        self.append(msg)
 
 def easyInfo(msg: str) -> None:
     SimpleLogger.instance().info(msg)
