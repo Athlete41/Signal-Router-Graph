@@ -14,7 +14,7 @@ from PyQt5.QtCore import QByteArray
 @register_node()
 class TcpClientNode(ConnNode):
     tppath = ("数据源", "TCP客户端")
-    icon = "icons/er.png"
+    icon = "icons/wifi.png"
     name = "TCP客户端"
     tooltip = "TCP 客户端，连接到远程服务器进行数据收发（多线程）"
     conn_title = "TCP客户端"
@@ -85,7 +85,7 @@ class TcpClientNode(ConnNode):
 @register_node()
 class TcpServerNode(ConnNode):
     tppath = ("数据源", "TCP服务端")
-    icon = "icons/er.png"
+    icon = "icons/wifi.png"
     name = "TCP服务端"
     tooltip = "TCP 服务端，接受客户端连接并进行数据收发（多线程）"
     conn_title = "TCP服务端"
