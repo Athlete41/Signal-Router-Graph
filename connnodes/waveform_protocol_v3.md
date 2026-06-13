@@ -110,33 +110,6 @@ if result is not None:
 
 ---
 
-## 数据流完整路径
-
-```
-信号发生器 V3 / TCP / 串口等数据源
-  │
-  │ data = [生成波形数据点]  # list[float]
-  │ qba = encode_packet(interval, data, channel_id=n)
-  │ emit dataOutput(qba)  →  pyqtSignal(QByteArray)
-  ▼
-ConnEdge（连接类型由全局配置决定：Auto 或 Queued）
-  │
-  ▼
-示波器 V3 OscilloscopeSampler.writeData(qba)
-  │ result = decode_packet(qba)
-  │ channel_id, interval, data = result
-  │ 根据 channel_id 路由到对应通道的 RingBuffer
-  ▼
-
-  ▼ (缓冲区溢出 → gap_count > 0)
-  │ 数据前部插入 NaN 魔法数字 → 画板绘制红色危险线段
-  ▼
-
-屏幕渲染
-```
-
----
-
 ## 设计决策
 
 | 决策 | 理由 |
