@@ -63,6 +63,33 @@ def _check_crc(ba: QByteArray, crc_offset: int) -> bool:
     return actual_crc == expected_crc
 
 
+# 协议内部常量
+_DATA_PAYLOAD_OFFSET: int = 13          # 数据载荷偏移
+
+
+def decode_raw(buf_bytes: bytes, pos: int, data_count: int):
+    """快速解码（不检查帧头/CRC/长度）— 供解析器内部使用
+
+    调用方必须确保 buf_bytes[pos:pos+13+4*data_count] 有效。
+
+    Args:
+        buf_bytes: 完整或部分协议包的 bytes
+        pos: 帧头起始位置
+        data_count: data_count 字段值（已在外部解析）
+
+    Returns:
+        channel_id, data_ndarray, gap_count, interval_us
+    """
+    channel_id = buf_bytes[pos + 2]
+    interval_us = struct.unpack('<I', buf_bytes[pos+3:pos+7])[0]
+    gap_count = struct.unpack('<I', buf_bytes[pos+9:pos+13])[0]
+    data = np.frombuffer(
+        buf_bytes[pos + _DATA_PAYLOAD_OFFSET:pos + _DATA_PAYLOAD_OFFSET + 4 * data_count],
+        dtype=np.float32
+    ).astype(np.float64)
+    return channel_id, data, gap_count, interval_us
+
+
 def decode_packet(ba: QByteArray) -> Optional[dict]:
     """解码 V3 协议包
 
