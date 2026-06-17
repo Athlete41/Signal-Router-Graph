@@ -336,7 +336,33 @@ class MyContent(ConnNodeContentWidget):
 | 删除端口 | 反序列化旧文件会失败（端口数量不匹配） |
 | 修改端口 key | registerSignal/registerSlot 的 key 必须同步修改 |
 
-### 4.5 调试技巧
+### 4.5 节点初始大小设置
+
+**背景：** 直接在 `initUI()` 中调用 `self.resize(W, H)` 会导致 grNode/content/QGraphicsProxyWidget 三方大小同步失败。根因是框架构造时序：`initUI()` 在 grNode 创建前执行，随后 `initContent()` 通过 `scene.addWidget()` 创建 `QGraphicsProxyWidget`，proxy 接管了 content 的几何管理后不再与 grNode 自动同步。
+
+**策略：** Content 只存期望尺寸，由 Node 构造完成后统一应用。方向为 **grNode（权威）→ content（被驱动）**。
+
+```python
+class MyContent(ConnNodeContentWidget):
+    def initUI(self):
+        # 不要调用 self.resize(W, H)！
+        self.setNodeSize(640, 700)   # 存期望尺寸，Node 构造后自动同步
+        # ... 搭建 UI 控件 ...
+
+class MyNode(ConnNode):
+    def __init__(self, scene):
+        super().__init__(scene, ...)
+        # 自动检测 _pending_node_size → 同步 grNode/content/proxy/端口
+```
+
+| 操作 | 方式 |
+|---|---|
+| 设初始大小 | Content.initUI() 调用 `self.setNodeSize(w, h)` |
+| 用户拖拽调整 | `ConnGraphicsNode.mouseMoveEvent` 中实时更新，大小存到 serialize/deserialize |
+| 反序列化恢复 | `ConnNode.deserialize()` 从 JSON 读取 width/height 覆盖 grNode |
+| 需要默认大小 | Content 不调 `setNodeSize` → 框架默认 200×120 |
+
+### 4.6 调试技巧
 
 | 问题 | 排查方法 |
 |---|---|

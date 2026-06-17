@@ -192,7 +192,8 @@ class OscilloscopeContent(ConnNodeContentWidget):
         # ── 信号连接 ─────────────────────────────────
         self._connectSignals()
 
-        # self.resize(400, 500)
+        # 设置节点框初始大小（父类方法，自动同步 grNode/content/proxy）
+        self.setNodeSize(640, 700)
 
     # ═══════════════════════════════════════════════════════
     # Worker 初始化

@@ -495,6 +495,19 @@ class ConnNodeContentWidget(QDMNodeContentWidget):
     def initUI(self):
         self.resize(200, 120)
 
+    def setNodeSize(self, width: int, height: int) -> None:
+        """设置节点框初始大小（UI 职责）
+
+        替代在 initUI() 中调用 self.resize(W, H) 的方式。
+        子类在 initUI() 中调用此方法，Node 构造完成后自动同步
+        grNode/content/proxy 三方尺寸。
+
+        Args:
+            width: 期望的节点框宽度（像素）
+            height: 期望的节点框高度（像素）
+        """
+        self._pending_node_size = (width, height)
+
 class ConnNode(Node):
     tppath = None
     icon = ""
@@ -540,6 +553,17 @@ class ConnNode(Node):
                 self.inputs[idx].setToolTip(tooltip)
                 self.inputs[idx].setText(conf.name if conf.name else conf.key)
                 self.inputs[idx].setArgsType(conf.argsType)
+
+            # ── 应用 Content 存储的初始大小 ────────────────
+            if hasattr(self.content, '_pending_node_size'):
+                w, h = self.content._pending_node_size
+                self.grNode.width = w
+                self.grNode.height = h
+                self.grNode.prepareGeometryChange()
+                self.grNode.updateContentIdealGeometry()
+                for sock in self.inputs + self.outputs:
+                    sock.setSocketPosition()
+                self.updateConnectedEdges()
 
         except Exception as e:
             easyError(f"{self.__class__.__name__} 实例初始化时错误:")

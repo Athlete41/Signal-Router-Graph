@@ -89,17 +89,6 @@ class OscilloscopeNodeV3(ConnNode):
             self.registerSlot(f"ch{i}",
                               self.content._workers[i].writeData)
 
-        # ── 设置 grNode 初始大小 ─────────────────────────────
-        # initSizes() 从 content.size() 推导的尺寸因 QGraphicsProxyWidget
-        # 接管后失效，此处显式覆盖（见 plan: 节点框大小策略分析）
-        self.grNode.width = 640
-        self.grNode.height = 700
-        self.grNode.prepareGeometryChange()
-        self.grNode.updateContentIdealGeometry()
-        for socket in self.inputs + self.outputs:
-            socket.setSocketPosition()
-        self.updateConnectedEdges()
-
     def initSettings(self) -> None:
         """初始化节点设置"""
         super().initSettings()
