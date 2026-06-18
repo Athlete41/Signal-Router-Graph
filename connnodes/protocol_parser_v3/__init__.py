@@ -87,8 +87,8 @@ class _ProtocolParserV3Base(ConnNode):
             ConnSocketConf(
                 socketType=2,
                 key=f"ch{i}",
-                name=f"CH{i}",
-                tooltip=f"通道 {i} 输出 (ndarray, gap_count, interval_us)",
+                name=f"输出{i+1}",
+                tooltip=f"输出端口 {i+1} (ndarray, gap_count, interval_us)",
                 argsType=(object, int, int)
             )
             for i in range(self.CHANNEL_COUNT)

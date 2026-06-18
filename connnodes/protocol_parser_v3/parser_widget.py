@@ -392,7 +392,7 @@ class ProtocolParserContent(ConnNodeContentWidget):
         self._logInfoStateChangedHandler(self.log_info_checkbox.checkState())
         self._logDebugStateChangedHandler(self.log_debug_checkbox.checkState())
 
-        self.resize(200, 130)
+        self.setNodeSize(276, 150)
 
     # ── 路由 ─────────────────────────────────────────────────
 
