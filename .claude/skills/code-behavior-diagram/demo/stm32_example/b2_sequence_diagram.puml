@@ -1,0 +1,46 @@
+@startuml stm32_b2_sequence
+title [时序图 - B2] 展开 B1"全部交互" — 组件级信息流
+
+' B2 独立视图: 在 B1 信息流基础上，展示更详细的信息类型/结构
+' 每条边携带 {字段} 信息，参与者为具体组件
+
+participant "启动代码" as Startup
+participant "BSP初始化器" as BSP
+participant "CubeMX初始化" as CubeMX
+participant "主应用" as MainApp
+participant "LED测试模块" as LEDTest
+participant "EXTI分发器" as EXTI
+participant "USB设备栈" as USB
+participant "HAL库" as HAL
+
+== 初始化阶段（展开 B1"接通电源"） ==
+Startup -> BSP : 调用构造函数{自动}
+BSP -> EXTI : 注册DFU回调{线号=15, 函数=USB_Emulate_Disconnect}
+BSP -> CubeMX : STM32_CubeMX_Init{}
+CubeMX -> HAL : HAL_Init{tick配置, 预取, 缓存}
+CubeMX -> HAL : SystemClock_Config{HSE→PLL→144MHz}
+CubeMX -> HAL : MX_GPIO_Init{PC13=输出, PA15=中断输入}
+CubeMX -> USB : MX_USB_DEVICE_Init{}
+USB -> HAL : HAL_PCD_MspInit{PA11=DP, PA12=DM}
+
+== 应用阶段（展开 B1"LED闪烁"） ==
+Startup -> MainApp : main{}
+MainApp -> LEDTest : LEDTest_Init{延时函数指针, LED设置函数指针}
+MainApp -> LEDTest : LEDTest_Blink{周期=500ms}
+LEDTest -> HAL : HAL_GPIO_WritePin{GPIO=GPIOC, PIN=13, 值=SET}
+LEDTest -> HAL : HAL_Delay{毫秒=500}
+LEDTest -> HAL : HAL_GPIO_WritePin{GPIO=GPIOC, PIN=13, 值=RESET}
+MainApp -> USB : CDC_Transmit_FS{内容="Hello...\r\n", 长度}
+
+== 中断处理（展开 B1"用户触发DFU"） ==
+HAL -> EXTI : HAL_GPIO_EXTI_Callback{引脚=PIN_15}
+EXTI -> EXTI : 查找钩子{线号=15}
+EXTI -> USB : USB_Emulate_Disconnect{清除DP上拉, 软复位, 关闭时钟}
+EXTI -> LEDTest : 快闪2次{次数=2}
+EXTI -> EXTI : while(1)停机
+
+note top of LEDTest
+  展开自 B1"开发板"的三个业务场景。
+  每个阶段的标题标注了对应的 B1 场景。
+end note
+@enduml

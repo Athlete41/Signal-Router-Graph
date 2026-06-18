@@ -1,0 +1,34 @@
+{
+  "skill_name": "code-behavior-diagram",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "分析 g:/Project/agent-skills/stm32_pio_led_test_bsp 这个项目，帮我生成 B1（业务视图）的状态转移图和时序图，用 PlantUML 格式输出。项目是一个 STM32F407 的 BSP（板级支持包），有 LED 闪烁、按键中断、USB CDC 虚拟串口功能。",
+      "expected_output": "生成 B1 级别（展示 B1→B2 嵌套）的状态转移图和时序图 PlantUML 代码，状态图使用 state {} 嵌套展示 B2 子状态，时序图使用 box 展示组件分组",
+      "files": [],
+      "assertions": [
+        "输出了PlantUML格式的状态图",
+        "输出了PlantUML格式的时序图",
+        "状态图包含至少3个业务状态（如启动、运行、DFU/维护）",
+        "状态图使用了 state {} 嵌套结构展示 B2 子状态",
+        "时序图使用参与者（actor）表示用户",
+        "时序图使用了 box 分组或分段标注展示组件层级",
+        "时序图中的信息流标注了 {} 信息结构",
+        "图表标注了层级（B1 或 B1→B2）"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "单独分析 g:/Project/agent-skills/stm32_pio_led_test_bsp/src/main.c 这个文件，帮我生成 B1 的状态转移图，用 PlantUML 格式输出。",
+      "expected_output": "基于 main.c 文件生成的 B1 级别状态图 PlantUML 代码，展示系统的完整状态流转，状态使用嵌套结构",
+      "files": [],
+      "assertions": [
+        "输出了PlantUML格式的状态图",
+        "图表标注了层级（B1）",
+        "状态图展示了从初始化到主循环的完整状态链",
+        "状态数量不少于3个",
+        "状态图使用了 state {} 嵌套结构"
+      ]
+    }
+  ]
+}

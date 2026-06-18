@@ -1,0 +1,16 @@
+@startuml
+title [状态图 - B2] 展开 B1:"运行中+B1:固件升级模式" — 组件级状态
+
+' B2 独立视图: 展示所有 B1 状态的组件级子状态
+' 这些片段也被 b1_state_diagram.puml !include 在 B1 状态内部
+
+!include b2_running_states.puml
+
+!include b2_dfu_states.puml
+
+note top of MainLoop
+  本图独立查看 B2 全部子状态。
+  这些内容也被 b1_state_diagram.puml
+  通过 !include 嵌入到 B1 状态内部。
+end note
+@enduml

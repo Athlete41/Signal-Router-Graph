@@ -1,0 +1,21 @@
+' ═══════════════════════════════════════════════════════════════
+' B2 片段: 展开 B1"运行中"的内部子状态
+' 被 b1_state_diagram.puml 在 state "运行中" { } 内 !include
+' 也可被 b2_state_diagram.puml !include 以 standalone 方式查看
+' ═══════════════════════════════════════════════════════════════
+
+state "主循环" as MainLoop {
+  [*] --> LED处理
+  LED处理 --> USB发送 : (可选，USE_USB_CDC)
+  USB发送 --> LED处理 : 每500ms循环
+}
+
+state "中断处理" as IRQ {
+  [*] --> EXTI调度
+  EXTI调度 --> DFU处理 : PA15下降沿
+  DFU处理 --> [*] : USB断开 + LED快闪 + while(1)
+}
+
+[*] --> MainLoop : 初始化完成
+MainLoop --> IRQ : 按键中断(PA15)
+IRQ --> [*] : 退出 运行中 → 固件升级模式

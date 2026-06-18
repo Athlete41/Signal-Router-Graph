@@ -1,0 +1,14 @@
+' ═══════════════════════════════════════════════════════════════
+' B2 片段: 展开 B1"固件升级模式"的内部子状态
+' 被 b1_state_diagram.puml 在 state "固件升级模式" { } 内 !include
+' 也可被 b2_state_diagram.puml !include 以 standalone 方式查看
+' ═══════════════════════════════════════════════════════════════
+
+state "USB断开模拟" as UsbDisc
+state "LED快闪提示" as LedFlash
+state "等待DFU烧录" as WaitDFU
+
+[*] --> UsbDisc : 进入DFU
+UsbDisc --> LedFlash : 断开完成
+LedFlash --> WaitDFU : 提示完成
+WaitDFU --> [*] : 复位重启
