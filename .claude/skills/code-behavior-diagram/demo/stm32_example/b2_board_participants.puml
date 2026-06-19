@@ -1,9 +1,0 @@
-' ═══════════════════════════════════════════════════════════════
-' B2 片段: 展开 B1"开发板(Board)"的内部组件
-' 被 b1_sequence_diagram.puml 在 box "开发板 [B1]" { } 内 !include
-' ═══════════════════════════════════════════════════════════════
-
-participant "BSP主模块" as BSP
-participant "LED测试模块" as LEDTest
-participant "EXTI分发器" as EXTI
-participant "USB设备栈" as USB
