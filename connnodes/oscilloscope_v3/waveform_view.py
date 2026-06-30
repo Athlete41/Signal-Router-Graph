@@ -70,7 +70,7 @@ class WaveformView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setInteractive(False)
-        self.setViewportUpdateMode(QGraphicsView.MinimalViewportUpdate)
+        # self.setViewportUpdateMode(QGraphicsView.MinimalViewportUpdate)  # 与全局设置冲突, 所以注释掉
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(200, 100)
@@ -123,6 +123,9 @@ class WaveformView(QGraphicsView):
 
         # ── 刻度绘制开关 ──
         self._show_scale: bool = True
+
+        # ── Real 模式：渲染完成立即触发重绘（由节点变体控制）──
+        self._immediate_update: bool = False
 
         # ── 图形项 ──
         self._grid_items: list[QGraphicsLineItem] = []
@@ -251,7 +254,8 @@ class WaveformView(QGraphicsView):
 
         # 渲染完成：重置 RenderCore 背压标志
         self._render_busy = False
-        # self.viewport().update()
+        if self._immediate_update:
+            self.viewport().update()
 
     # ── 大小变化 ──────────────────────────────────
 

@@ -17,11 +17,12 @@ from nodeeditor.node_socket import LEFT_CENTER, RIGHT_CENTER
 from .oscilloscope_widget import OscilloscopeV3Content
 
 
-@register_node()
-class OscilloscopeV3Node(ConnNode):
-    """示波器 V3 节点
+class _OscilloscopeV3Base(ConnNode):
+    """示波器 V3 基类（不直接注册）
 
     双通道输入，接收协议解析器 V3 的 (ndarray, interval_us)。
+
+    子类通过 _immediate_update 控制渲染完成后是否主动刷新视图。
 
     端口约定:
         输入 1: (object, int) — 数据
@@ -32,12 +33,10 @@ class OscilloscopeV3Node(ConnNode):
         2. 反序列化依赖端口声明顺序，新增端口必须追加在末尾
     """
 
-    tppath = ("可视化", "示波器V3")
-    icon = "icons/oscilloscope.png"
-    name = "示波器V3"
-    tooltip = "双通道示波器"
-    conn_title = "示波器V3"
+    _immediate_update: ClassVar[bool] = False
 
+    icon = "icons/oscilloscope.png"
+    tooltip = "双通道示波器"
     NodeContent_class = OscilloscopeV3Content
 
     def __init__(self, scene):
@@ -63,6 +62,9 @@ class OscilloscopeV3Node(ConnNode):
 
         self.registerSlot("input_1", self.content._dc.on_data_1)
         self.registerSlot("input_2", self.content._dc.on_data_2)
+
+        # 注入变体标志到 WaveformView
+        self.content.ui.waveform_view._immediate_update = self._immediate_update
 
     def initSettings(self) -> None:
         super().initSettings()
@@ -143,3 +145,39 @@ class OscilloscopeV3Node(ConnNode):
         finally:
             c.blockSignals(False)
         return res
+
+
+@register_node()
+class OscilloscopeV3Node(_OscilloscopeV3Base):
+    """示波器 V3 节点 · Eco 模式
+
+    渲染完成后不主动刷新视图，依赖定时器自然节律触发重绘。
+    CPU 负载较低，适合同时运行多个示波器节点的场景。
+    """
+
+    tppath = ("可视化", "示波器V3")
+    icon = "icons/oscilloscope.png"
+    name = "示波器V3"
+    tooltip = ("双通道示波器 · Eco模式\n"
+               "渲染完成后不主动刷新视图，依赖定时器自然节律触发重绘。\n"
+               "CPU负载较低，适合同时运行多个示波器节点的场景。")
+    conn_title = "示波器V3"
+    _immediate_update = False
+
+
+@register_node()
+class OscilloscopeV3RealNode(_OscilloscopeV3Base):
+    """示波器 V3 节点 · Real 模式
+
+    每次渲染完成后立即刷新视图，波形响应更及时。
+    CPU 负载较高，适合单节点高频调试场景。
+    """
+
+    tppath = ("可视化", "示波器V3-Real")
+    icon = "icons/oscilloscope.png"
+    name = "示波器V3-Real"
+    tooltip = ("双通道示波器 · Real模式\n"
+               "每次渲染完成后立即刷新视图，波形响应更及时。\n"
+               "CPU负载较高，适合单节点高频调试场景。")
+    conn_title = "示波器V3-Real"
+    _immediate_update = True
