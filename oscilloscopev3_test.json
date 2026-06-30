@@ -1,0 +1,165 @@
+{
+    "id": 2732815125472,
+    "scene_width": 64000,
+    "scene_height": 64000,
+    "nodes": [
+        {
+            "id": 2732815229680,
+            "title": "\u793a\u6ce2\u5668V3",
+            "pos_x": -79.0,
+            "pos_y": 3.0,
+            "inputs": [
+                {
+                    "id": 2732815329856,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                },
+                {
+                    "id": 2732815331296,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [],
+            "content": {},
+            "tppath": [
+                "\u53ef\u89c6\u5316",
+                "\u793a\u6ce2\u5668V3"
+            ],
+            "width": 904.03125,
+            "height": 1038.75,
+            "x_window_ms": 1000.0,
+            "y_window_mv_1": 2000.0,
+            "y_offset_mv_1": 0.0,
+            "y_window_mv_2": 2000.0,
+            "y_offset_mv_2": 0.0,
+            "x_div": 2.0,
+            "y_div": 2.0,
+            "fps": 30,
+            "mem_depth": 10000
+        },
+        {
+            "id": 2732815418416,
+            "title": "Hex\u53d1\u9001\u5668",
+            "pos_x": -1048.4374999999998,
+            "pos_y": 331.24999999999994,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 2732815424128,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6570\u636e\u6e90",
+                "Hex\u53d1\u9001\u5668"
+            ],
+            "width": 240,
+            "height": 344,
+            "hex_content": "AA 55 01 A0 86 01 00 0A 00 00 00 00 00 00 00 00 00 18 79 16 3F 71 78 73 3F 71 78 73 3F 18 79 16 3F 32 31 0D 25 18 79 16 BF 71 78 73 BF 71 78 73 BF 18 79 16 BF A3 E9",
+            "file_path": "G:/Project/Signal-Router-Graph/test_sine_10hz_1.0hz_10pts_ch1.hex.txt",
+            "timer_enabled": false,
+            "timer_duration": 1.0
+        },
+        {
+            "id": 2732815429984,
+            "title": "Hex\u53d1\u9001\u5668",
+            "pos_x": -1058.75,
+            "pos_y": -97.5,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 2732815430224,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6570\u636e\u6e90",
+                "Hex\u53d1\u9001\u5668"
+            ],
+            "width": 240,
+            "height": 344,
+            "hex_content": "AA 55 00 A0 86 01 00 0A 00 00 00 00 00 00 00 00 00 18 79 16 3F 71 78 73 3F 71 78 73 3F 18 79 16 3F 32 31 0D 25 18 79 16 BF 71 78 73 BF 71 78 73 BF 18 79 16 BF D0 AD",
+            "file_path": "G:/Project/Signal-Router-Graph/test_sine_10hz_1.0hz_10pts_ch0.hex.txt",
+            "timer_enabled": false,
+            "timer_duration": 1.0
+        },
+        {
+            "id": 2732815429888,
+            "title": "\u534f\u8bae\u89e3\u6790\u5668V3-2ch",
+            "pos_x": -562.5,
+            "pos_y": 163.75,
+            "inputs": [
+                {
+                    "id": 2732815430848,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 2,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2732815430896,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2732815430944,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6570\u636e\u5904\u7406",
+                "\u534f\u8bae\u89e3\u6790\u5668V3-2ch"
+            ],
+            "width": 276,
+            "height": 150,
+            "channel_offset": 0
+        }
+    ],
+    "edges": [
+        {
+            "id": 2732815431472,
+            "edge_type": 5,
+            "start": 2732815430224,
+            "end": 2732815430848
+        },
+        {
+            "id": 2732815432096,
+            "edge_type": 5,
+            "start": 2732815424128,
+            "end": 2732815430848
+        },
+        {
+            "id": 2732815432480,
+            "edge_type": 5,
+            "start": 2732815430896,
+            "end": 2732815329856
+        },
+        {
+            "id": 2732815432672,
+            "edge_type": 5,
+            "start": 2732815430944,
+            "end": 2732815331296
+        }
+    ]
+}

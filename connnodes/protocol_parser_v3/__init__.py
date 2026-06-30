@@ -35,7 +35,7 @@ class _ProtocolParserV3Base(ConnNode):
 
     端口约定:
         输入: 1 个 QByteArray，key="dataInput"
-        输出: N 个 (object, int, int)，key="ch0"~"ch{N-1}"
+        输出: N 个 (object, int)，key="ch0"~"ch{N-1}"
         详见设计文档「端口约定」
 
     约束:
@@ -76,7 +76,7 @@ class _ProtocolParserV3Base(ConnNode):
                key="dataInput", argsType=(QByteArray,)
             2. signalsConf: 按 CHANNEL_COUNT 生成 N 个输出端口
                key="ch0", "ch1", ..., "ch{N-1}"
-               每个端口 argsType=(object, int, int)
+               每个端口 argsType=(object, int)
             3. registerSlot("dataInput", self.content._worker.writeData)
             4. registerSignal("ch{i}", self.content.ch{i})  对每个通道
             5. ★ 内容部件在 initInnerClasses 中创建（不是这里）
@@ -88,8 +88,8 @@ class _ProtocolParserV3Base(ConnNode):
                 socketType=2,
                 key=f"ch{i}",
                 name=f"输出{i+1}",
-                tooltip=f"输出端口 {i+1} (ndarray, gap_count, interval_us)",
-                argsType=(object, int, int)
+                tooltip=f"输出端口 {i+1} (ndarray, interval_us)",
+                argsType=(object, int)
             )
             for i in range(self.CHANNEL_COUNT)
         ]

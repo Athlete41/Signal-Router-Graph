@@ -9,7 +9,7 @@
       │     ├── _processBuffer() — 片段重组 + CRC 校验 + 解码
       │     └── op_signal(channel_id, ndarray, gap_count, interval_us)
       │
-      ├── ch0 ~ ch{N-1} (pyqtSignal(object, int, int))
+      ├── ch0 ~ ch{N-1} (pyqtSignal(object, int))
       │
       └── UI: 通道偏移 spin、分级日志 checkboxes（错误/警告/信息/调试）
 
@@ -64,13 +64,12 @@ class _ProtocolParserWorker(QObject):
         4. CRC 校验使用 memoryview 零拷贝
     """
 
-    op_signal = pyqtSignal(int, object, int, int)
+    op_signal = pyqtSignal(int, object, int)
     """解析结果输出
 
     参数:
         - channel_id: int           通道 ID
-        - ndarray: object           numpy.ndarray(float64)，含前部 NaN gap
-        - gap_count: int            前 N 个点为危险区域
+        - ndarray: object           numpy.ndarray(float32)，含前部 NaN gap
         - interval_us: int          采样间隔微秒
     """
 
@@ -131,7 +130,7 @@ class _ProtocolParserWorker(QObject):
     def _get_np_buffer(self, data_count: int) -> np.ndarray:
         """获取预分配的 ndarray 缓冲区（复用避免分配）"""
         if data_count not in self._np_pool:
-            self._np_pool[data_count] = np.empty(data_count, dtype=np.float64)
+            self._np_pool[data_count] = np.empty(data_count, dtype=np.float32)
         return self._np_pool[data_count]
 
     # ── 核心处理循环 ─────────────────────────────────────────
@@ -217,7 +216,7 @@ class _ProtocolParserWorker(QObject):
                         f"协议解析器: CH{channel_id}  {data_count}点  "
                         f"gap={gap_count}  interval={interval_us}μs")
                     self.op_signal.emit(channel_id, data_np,
-                                        gap_count, interval_us)
+                                        interval_us)
                 except Exception:
                     self.log_error.emit(
                         f"协议解析器: ✗ 解码异常 pos={pos}")
@@ -283,8 +282,8 @@ class _ProtocolParserWorker(QObject):
                 f"协议解析器: ⚠ 坏包 pos={pos} (头部解析失败)")
 
         if total_gap > 0:
-            gap_data = np.full(total_gap, np.nan, dtype=np.float64)
-            self.op_signal.emit(channel_id, gap_data, total_gap, interval_us)
+            gap_data = np.full(total_gap, np.nan, dtype=np.float32)
+            self.op_signal.emit(channel_id, gap_data, interval_us)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -305,10 +304,10 @@ class ProtocolParserContent(ConnNodeContentWidget):
     """
 
     # ── 类级通道信号（必需：pyqtSignal 必须是类属性才是 pyqtBoundSignal） ──
-    ch0 = pyqtSignal(object, int, int)
-    ch1 = pyqtSignal(object, int, int)
-    ch2 = pyqtSignal(object, int, int)
-    ch3 = pyqtSignal(object, int, int)
+    ch0 = pyqtSignal(object, int)
+    ch1 = pyqtSignal(object, int)
+    ch2 = pyqtSignal(object, int)
+    ch3 = pyqtSignal(object, int)
 
     def __init__(self, node, ch_count: int,
                  parent: QWidget | None = None) -> None:
@@ -396,9 +395,9 @@ class ProtocolParserContent(ConnNodeContentWidget):
 
     # ── 路由 ─────────────────────────────────────────────────
 
-    @pyqtSlot(int, object, int, int)
+    @pyqtSlot(int, object, int)
     def _onParsedData(self, channel_id: int, data_np: np.ndarray,
-                      gap_count: int, interval_us: int) -> None:
+                      interval_us: int) -> None:
         """来自 Worker 的解析结果 → 按 channel_id 路由到对应静态端口
 
         路由公式:
@@ -408,7 +407,7 @@ class ProtocolParserContent(ConnNodeContentWidget):
         """
         port_id = channel_id - self._channel_offset
         if 0 <= port_id < self._ch_count:
-            getattr(self, f"ch{port_id}").emit(data_np, gap_count, interval_us)
+            getattr(self, f"ch{port_id}").emit(data_np, interval_us)
         else:
             easyWarning(
                 f"协议解析器: 通道 {channel_id} 超出范围 "

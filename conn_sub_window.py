@@ -1,6 +1,6 @@
 from qtpy.QtGui import QIcon, QPixmap, QWheelEvent
 from qtpy.QtCore import QDataStream, QIODevice, QPointF, Qt
-from qtpy.QtWidgets import QAction, QApplication, QGraphicsProxyWidget, QMenu, QGraphicsView
+from qtpy.QtWidgets import QAction, QGraphicsProxyWidget, QMenu
 
 from conn_conf import CONN_NODES, ALL_NODES_DISPLAY, get_class_from_tppath, LISTBOX_MIMETYPE, GlobalSettingManager
 from conn_base import ConnScene
@@ -22,8 +22,8 @@ class ConnDMGraphicsView(QDMGraphicsView):
         super().__init__(grScene, parent)
 
     def wheelEvent(self, event):
-        """在画布缩放之前，优先把滚轮事件转发给 WaveformWidget"""
-        # 遍历光标下的所有 QGraphicsItem，查找 WaveformWidget
+        """在画布缩放之前，优先把滚轮事件转发给子控件"""
+
         for item in self.items(event.pos()):
             if isinstance(item, QGraphicsProxyWidget):
                 proxy_widget = item.widget()
@@ -33,8 +33,8 @@ class ConnDMGraphicsView(QDMGraphicsView):
                 local = proxy_widget.mapFromGlobal(event.globalPos())
                 child = proxy_widget.childAt(local)
                 while child is not None:
-                    if child.__class__.__name__ == 'WaveformWidget':
-                        # 坐标转到 WaveformWidget 局部空间
+                    if getattr(child, 'enableWheelEvent', False):
+                        # 坐标转到 child widget 局部空间
                         wf_local = child.mapFromGlobal(event.globalPos())
                         new_ev = QWheelEvent(
                             QPointF(wf_local),
@@ -47,11 +47,11 @@ class ConnDMGraphicsView(QDMGraphicsView):
                             event.inverted(),
                             event.source(),
                         )
-                        QApplication.sendEvent(child, new_ev)
+                        child.wheelEvent(new_ev)
                         event.accept()
                         return
                     child = child.parentWidget()
-        # 不在 WaveformWidget 上 → 默认画布缩放
+
         super().wheelEvent(event)
 
 

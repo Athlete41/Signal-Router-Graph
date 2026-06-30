@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Read(//c/Users/bailang/.claude/projects/g--Project-Signal-Router-Graph/memory/**)",
+      "Read(//g/Project/**)"
+    ]
+  }
+}

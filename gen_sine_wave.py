@@ -82,7 +82,7 @@ def main():
                               args.points, args.channel)
 
     # 输出路径
-    base = args.output or f"test_sine_{args.sampling}hz_{args.signal}hz_{args.points}pts"
+    base = args.output or f"test_sine_{args.sampling}hz_{args.signal}hz_{args.points}pts_ch{args.channel}"
 
     # 保存 hex 文本
     txt_path = f"{base}.hex.txt"

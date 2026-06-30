@@ -86,7 +86,7 @@ def decode_raw(buf_bytes: bytes, pos: int, data_count: int):
     data = np.frombuffer(
         buf_bytes[pos + _DATA_PAYLOAD_OFFSET:pos + _DATA_PAYLOAD_OFFSET + 4 * data_count],
         dtype=np.float32
-    ).astype(np.float64)
+    )
     return channel_id, data, gap_count, interval_us
 
 
@@ -127,8 +127,8 @@ def decode_packet(ba: QByteArray) -> Optional[dict]:
     if not _check_crc(ba, crc_offset):
         return None
 
-    # 6. 解码数据（numpy float64）
-    data = np.frombuffer(raw[13:13 + 4 * data_count], dtype=np.float32).astype(np.float64)
+    # 6. 解码数据（numpy float32）
+    data = np.frombuffer(raw[13:13 + 4 * data_count], dtype=np.float32)
 
     return {
         "channel_id": channel_id,
