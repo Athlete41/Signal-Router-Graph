@@ -61,7 +61,7 @@ class OscilloscopeV3Content(ConnNodeContentWidget):
         self.ui.waveform_view.rebuild_overlay()
 
         self.setStyleSheet(self._style_sheet())
-        self.setNodeSize(800, 760)
+        self.setNodeSize(900, 1000)
 
         # ── 注入 interval 读取回调 + 启动 WV 内部定时器 ──
         wv = self.ui.waveform_view
