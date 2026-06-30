@@ -302,26 +302,22 @@ class WaveformView(QGraphicsView):
     # ── 刻度绘制（可选）────────────────────────────
 
     @staticmethod
-    def _fmt_time_short(ms: float) -> str:
-        """毫秒 → 简短单位字符串"""
-        if ms >= 1000:
+    def _fmt_time_by_window(ms: float, window_ms: float) -> str:
+        """根据时间窗口统一单位格式化时间值"""
+        if window_ms >= 1000:
             return f"{ms/1000:.2f}s"
-        elif ms >= 1:
+        elif window_ms >= 1:
             return f"{ms:.2f}ms"
-        elif ms >= 0.001:
-            return f"{ms*1000:.0f}µs"
         else:
-            return f"{ms*1000000:.0f}ns"
+            return f"{ms*1000:.0f}µs"
 
     @staticmethod
-    def _fmt_voltage_short(mv: float) -> str:
-        """毫伏 → 简短单位字符串"""
-        if abs(mv) >= 1000:
+    def _fmt_voltage_by_range(mv: float, range_mv: float) -> str:
+        """根据电压范围统一单位格式化电压值"""
+        if range_mv >= 1000:
             return f"{mv/1000:.3f}V"
-        elif mv != 0:
-            return f"{mv:.1f}mV"
         else:
-            return "0"
+            return f"{mv:.1f}mV"
 
     def _draw_scale_marks(self, painter: QPainter) -> None:
         """在波形之上绘制水平时间 + 垂直电压刻度"""
@@ -339,7 +335,7 @@ class WaveformView(QGraphicsView):
         for i in range(self._grid_h_div + 1):
             x = i * h_step
             t_ms = i * time_per_div
-            label = self._fmt_time_short(t_ms)
+            label = self._fmt_time_by_window(t_ms, self._x_window_ms)
             # 边界保护：clamp rx 使 rect 不超出左右边缘
             rx = max(0, min(w - RECT_W, x - RECT_W / 2))
             painter.drawText(QRectF(rx, h - 14, RECT_W, 12),
@@ -370,8 +366,8 @@ class WaveformView(QGraphicsView):
             else:
                 ch2_mv = 0.0
 
-            label1 = self._fmt_voltage_short(ch1_mv)
-            label2 = self._fmt_voltage_short(ch2_mv)
+            label1 = self._fmt_voltage_by_range(ch1_mv, y_win_1)
+            label2 = self._fmt_voltage_by_range(ch2_mv, y_win_2)
 
             # CH1 黄色 — 格线上方；CH2 青色 — 格线下方
             t1y = y - LINE_H
