@@ -83,6 +83,7 @@ class OscilloscopeV3Node(ConnNode):
             "y_div": c.ui.y_div_spin.value(),
             "fps": c.ui.fps_spin.value(),
             "mem_depth": c.ui.memory_depth_spin.value(),
+            "show_scale": c.ui.show_scale_check.isChecked(),
         })
         return res
 
@@ -134,6 +135,10 @@ class OscilloscopeV3Node(ConnNode):
             # V2 的 time_window_us → V3 的 x_window_ms
             if "x_window_ms" not in data and "time_window_us" in data:
                 ui.x_window_ms_spin.setValue(data["time_window_us"] // 1000)
+
+            # 刻度绘制状态（默认 True，旧文件没有此字段时保持默认）
+            if "show_scale" in data:
+                ui.show_scale_check.setChecked(data["show_scale"])
 
         finally:
             c.blockSignals(False)

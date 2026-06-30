@@ -33,10 +33,8 @@ class WaveformView(QGraphicsView):
     y_offset_mv_2_changed = pyqtSignal(float)
 
     # ── 双缓冲 QPainterPath ──
-    path_1: QPainterPath | None = None          # active，paintEvent 读
-    path_2: QPainterPath | None = None
-    pending_path_1: QPainterPath | None = None  # pending，RenderCore 写
-    pending_path_2: QPainterPath | None = None
+    # 注意：这些是类级别类型标注，实例属性在 __init__ 中初始化
+    # 不要在这里赋值（会导致类属性而非实例属性）
 
     # 默认初始尺寸
     _DEFAULT_WIDTH = 600
@@ -51,6 +49,12 @@ class WaveformView(QGraphicsView):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+
+        # ── 双缓冲 QPainterPath ──
+        self.path_1: QPainterPath | None = None          # active，paintEvent 读
+        self.path_2: QPainterPath | None = None
+        self.pending_path_1: QPainterPath | None = None  # pending，RenderCore 写
+        self.pending_path_2: QPainterPath | None = None
 
         # ── 动态尺寸 ──
         self._view_w = self._DEFAULT_WIDTH

@@ -78,6 +78,7 @@ class RenderCore(QObject):
 
         if self._check_cache(params, wc1, wc2):
             # 缓存命中
+            # ⚠️ 跨线程写 pending_path，安全依赖数据链路协议，见下方同款注释
             self._waveform_view.pending_path_1 = self._cached_path_1
             self._waveform_view.pending_path_2 = self._cached_path_2
             self.waveform_ready.emit(start, total_pts, window_pt)
@@ -101,6 +102,17 @@ class RenderCore(QObject):
             path2 = self._build_path(data_2, half_v_2, off_v_2, cy,
                                     screen_w, window_linecount)
             
+            # ⚠️ 跨线程写 WaveformView.pending_path（渲染线程→主线程对象）
+            # 安全前提（数据链路协议）：
+            #   1. WaveformView 发 render_request 时置 _render_busy=True
+            #   2. RenderCore 处理完才 emit waveform_ready（QueuedConnection）
+            #   3. 主线程 on_render_path 收到后：
+            #      a) 交换 pending↔active（主线程写 path_1/2）
+            #      b) 置 _render_busy=False
+            #   4. 下一个 tick 检查 _render_busy，为 True 则跳过不发请求
+            # → 任意时刻最多一个线程持有 pending_path 的写权限，
+            #   paintEvent 只读 path_1/2（active），从不读 pending_path。
+            #   不存在并发读写同一字段的时间窗口。
             self._waveform_view.pending_path_1 = path1
             self._waveform_view.pending_path_2 = path2
 
