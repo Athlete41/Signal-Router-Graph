@@ -118,9 +118,6 @@ class OscilloscopeV3Content(ConnNodeContentWidget):
         # 注入 RC 的 WV 引用（RC 写入 pending_path）
         rc._waveform_view = wv
 
-        # 注入心跳控件
-        wv.set_heartbeat(ui.heartbeat)
-
         # 绑定滚动条
         wv.set_scrollbar(ui.x_scroll_bar)
 
@@ -170,6 +167,7 @@ class OscilloscopeV3Content(ConnNodeContentWidget):
         ui.clear_btn.clicked.connect(self._on_clear)
         ui.save_btn.clicked.connect(self._on_save)
         ui.ch_select_btn.toggled.connect(self._on_ch_select_toggled)
+        wv.active_channel_changed.connect(self._on_active_channel_changed)
 
     @staticmethod
     def _style_sheet() -> str:
@@ -278,6 +276,18 @@ class OscilloscopeV3Content(ConnNodeContentWidget):
         """切换激活通道 1/2"""
         ch = 2 if checked else 1
         self.ui.waveform_view.set_active_channel(ch)
+        color = "#00FFFF" if checked else "#FFFF00"
+        text = "CH2" if checked else "CH1"
+        self.ui.ch_select_btn.setStyleSheet(f"color: {color};")
+        self.ui.ch_select_btn.setText(text)
+
+    @pyqtSlot(int)
+    def _on_active_channel_changed(self, ch: int) -> None:
+        """右键菜单切换通道后同步按钮状态"""
+        checked = ch == 2
+        self.ui.ch_select_btn.blockSignals(True)
+        self.ui.ch_select_btn.setChecked(checked)
+        self.ui.ch_select_btn.blockSignals(False)
         color = "#00FFFF" if checked else "#FFFF00"
         text = "CH2" if checked else "CH1"
         self.ui.ch_select_btn.setStyleSheet(f"color: {color};")

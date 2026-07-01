@@ -233,3 +233,54 @@ class ThreadManager(QObject):
 if __name__ == "__main__":
     logger.error("这是一条错误日志", exc_info=True)
     listener.stop()
+
+
+
+# ── 视口可见性检测 ──────────────────────────────────
+
+from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtWidgets import QApplication, QMdiArea, QWidget
+
+
+def is_in_active_viewport(widget: QWidget) -> bool:
+    """
+    判断控件是否在激活 MDI tab 的视口内。
+
+    从 QApplication.activeWindow() 自上而下定位激活视口的全局矩形，
+    与控件的全局矩形求交。不依赖控件的父链，避免 QGraphicsProxyWidget
+    中 window() 失效的问题。
+
+    返回 False 的场景：
+    - 主窗口失焦（最小化 / 切换到其他应用）
+    - 没有激活的子窗口
+    - 控件的全局矩形与激活视口不重叠（tab 后台 / 滚出视口）
+    """
+    # 1) 主窗口无焦点
+    if not QApplication.activeWindow():
+        return False
+
+    # 2) 从主窗口 → QMdiArea → activeSubWindow → NodeEditorWidget.view
+    top = QApplication.activeWindow()
+    mdi = top.findChild(QMdiArea)
+    if mdi is None:
+        return True  # 没有 MDI 时不做限制
+
+    active = mdi.activeSubWindow()
+    if active is None:
+        return False
+
+    node_editor = active.widget()   # → ConnSubWindow (NodeEditorWidget)
+    view = getattr(node_editor, 'view', None)
+    if view is None:
+        return True
+
+    # 3) 激活视口的全局矩形
+    vp = view.viewport()
+    vp_global = QRect(vp.mapToGlobal(QPoint(0, 0)),
+                      vp.mapToGlobal(QPoint(vp.width(), vp.height())))
+
+    # 4) 控件的全局矩形
+    w_global = QRect(widget.mapToGlobal(QPoint(0, 0)),
+                     widget.mapToGlobal(QPoint(widget.width(), widget.height())))
+
+    return w_global.intersects(vp_global)

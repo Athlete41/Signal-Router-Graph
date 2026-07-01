@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import (QCheckBox, QDoubleSpinBox, QFormLayout,
                               QGroupBox, QHBoxLayout, QLabel, QPushButton,
                               QScrollBar, QSpinBox, QVBoxLayout)
 
-from .heartbeat import HeartbeatWidget
 from .waveform_view import WaveformView
 
 
@@ -26,9 +25,6 @@ class Ui_OscilloscopeV3(object):
         # ── 波形显示区 ──
         self.waveform_view = WaveformView(Content)
         layout.addWidget(self.waveform_view)
-
-        # ── 心跳控件（铺满 WaveformView，检测 paintEvent 是否触发）──
-        self.heartbeat = HeartbeatWidget(self.waveform_view)
 
         # ── 水平滚动条（波形图下方） ──
         self.x_scroll_bar = QScrollBar(Qt.Horizontal, Content)

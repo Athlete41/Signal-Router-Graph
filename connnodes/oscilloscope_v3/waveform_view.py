@@ -1,26 +1,22 @@
 """
 波形显示组件 — WaveformView
 
-网格线 + 双缓冲波形绘制。
+QWidget 直接绘制：背景填充 → 网格线 → 波形路径 → 刻度标记。
+网格由纯 QPainter.drawLine() 动态绘制，无 scene/graphic-item 管理。
 双缓冲：RenderCore 写 pending_path_1/2，on_render_path 交换到 path_1/2，paintEvent 绘制。
-
-paintEvent 覆盖方案（方案 C）：
-  super().paintEvent() 画 scene 项（网格/信息），再 QPainter.drawPath() 画波形。
 """
 from __future__ import annotations
 
 import time
 
 from PyQt5.QtCore import Qt, QRectF, QTimer, pyqtSignal
-from PyQt5.QtGui import (QBrush, QColor, QPainter, QPen)
-from PyQt5.QtWidgets import (QGraphicsLineItem, QGraphicsScene,
-    QGraphicsView, QWidget, QScrollBar, QSizePolicy)
+from PyQt5.QtGui import (QColor, QPainter, QPen)
+from PyQt5.QtWidgets import (QWidget, QScrollBar, QSizePolicy)
 from PyQt5.QtGui import QPainterPath
 
-from .heartbeat import HeartbeatWidget
+from conn_utils import is_in_active_viewport
 
-
-class WaveformView(QGraphicsView):
+class WaveformView(QWidget):
     """波形显示视图（双缓冲 + paintEvent 绘制波形）"""
 
     render_request = pyqtSignal(object)  # params: dict → RenderCore.on_render_request
@@ -31,6 +27,7 @@ class WaveformView(QGraphicsView):
     y_offset_mv_1_changed = pyqtSignal(float)
     y_window_mv_2_changed = pyqtSignal(float)
     y_offset_mv_2_changed = pyqtSignal(float)
+    active_channel_changed = pyqtSignal(int)  # 1=CH1, 2=CH2
 
     # ── 双缓冲 QPainterPath ──
     # 注意：这些是类级别类型标注，实例属性在 __init__ 中初始化
@@ -60,21 +57,10 @@ class WaveformView(QGraphicsView):
         self._view_w = self._DEFAULT_WIDTH
         self._view_h = self._DEFAULT_HEIGHT
 
-        self._scene = QGraphicsScene(self)
-        self.setScene(self._scene)
-        self._scene.setSceneRect(0, 0, self._view_w, self._view_h)
-
-        self.setRenderHint(QPainter.Antialiasing, True)
         self._antialiasing = True
-        self.setRenderHint(QPainter.SmoothPixmapTransform, False)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setInteractive(False)
-        # self.setViewportUpdateMode(QGraphicsView.MinimalViewportUpdate)  # 与全局设置冲突, 所以注释掉
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(200, 100)
-        self.setBackgroundBrush(QBrush(self.COLOR_BG))
 
         # ── 网格格数（可通过 set_grid_div 调整）──
         self._grid_h_div = 10
@@ -104,7 +90,7 @@ class WaveformView(QGraphicsView):
 
         # ── 鼠标拖拽状态 ──
         self._drag_mode: str | None = None  # None / "h_scroll" / "offset"
-        self._drag_start_x: int = 0
+        self._drag_start_x: int | None = None
         self._drag_start_y: int = 0
         self._drag_start_x_scroll: int = 0
 
@@ -115,27 +101,12 @@ class WaveformView(QGraphicsView):
         self._interval_source: callable | None = None
         self._fps: int = 30
 
-        # ── 心跳检测 ──
-        self._heartbeat: HeartbeatWidget | None = None
-        self._last_beat_count: int = -1
-        self._heartbeat_stopped: bool = False
-        self._heartbeat_stop_time: float = 0.0
-
         # ── 刻度绘制开关 ──
         self._show_scale: bool = True
-
-        # ── Real 模式：渲染完成立即触发重绘（由节点变体控制）──
-        self._immediate_update: bool = False
-
-        # ── 图形项 ──
-        self._grid_items: list[QGraphicsLineItem] = []
 
         # ── 预创建静态画笔 ──
         self._pen_1 = QPen(self.COLOR_1, 1.2)
         self._pen_2 = QPen(self.COLOR_2, 1.2)
-        self._pen_zero = QPen(self.COLOR_ZERO, 1, Qt.DashLine)
-
-        self._build_grid()
 
     # ── 参数更新入口（UI / 鼠标交互调用，值变时发射信号）──
 
@@ -191,15 +162,14 @@ class WaveformView(QGraphicsView):
             self._grid_h_div = max(1, int(h_div))
         if v_div is not None:
             self._grid_v_div = max(1, int(v_div))
-        self._rebuild_grid()
+        self.update()
 
     # ── 抗锯齿开关 ─────────────────────────────
 
     def set_antialiasing(self, enabled: bool) -> None:
         """开关抗锯齿渲染"""
         self._antialiasing = enabled
-        self.setRenderHint(QPainter.Antialiasing, enabled)
-        self.viewport().update()
+        self.update()
 
     # ── 滚动条绑定 ──────────────────────────────
 
@@ -252,15 +222,14 @@ class WaveformView(QGraphicsView):
         if self._drag_mode is None and self._x_scroll is not None and start >= total_pts - window_pt:
             self._x_scroll = None
 
-        # 渲染完成：重置 RenderCore 背压标志
+        # 渲染完成：重置 RenderCore 背压标志 + 触发重绘
         self._render_busy = False
-        if self._immediate_update:
-            self.viewport().update()
+        self.update()
 
     # ── 大小变化 ──────────────────────────────────
 
     def resizeEvent(self, event) -> None:
-        """视图大小变化时重建场景，同步心跳尺寸"""
+        """视图大小变化时记录新尺寸，触发重绘"""
         super().resizeEvent(event)
         w = self.width()
         h = self.height()
@@ -268,11 +237,7 @@ class WaveformView(QGraphicsView):
             return
         self._view_w = w
         self._view_h = h
-        self._scene.setSceneRect(0, 0, w, h)
-        self._rebuild_grid()
-        # 同步心跳尺寸
-        if self._heartbeat is not None:
-            self._heartbeat.setGeometry(0, 0, w, h)
+        self.update()
 
     def get_view_width(self) -> int:
         return self._view_w
@@ -280,24 +245,28 @@ class WaveformView(QGraphicsView):
     def get_view_height(self) -> int:
         return self._view_h
 
-    # ── paintEvent 覆盖（方案 C） ───────────────
+    # ── paintEvent ───────────────
 
     def paintEvent(self, event) -> None:
-        """先画 scene（网格/文字），再画波形"""
-        super().paintEvent(event)  # 画 scene 已有项（grid + info）
-
-        painter = QPainter(self.viewport())
+        """先画网格，再画波形，再画刻度"""
+        painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, self._antialiasing)
 
+        # 背景
+        painter.fillRect(0, 0, self._view_w, self._view_h, self.COLOR_BG)
+
+        # 网格
+        self._draw_grid(painter)
+
+        # 波形
         if self.path_1 is not None:
             painter.setPen(self._pen_1)
             painter.drawPath(self.path_1)
-
         if self.path_2 is not None:
             painter.setPen(self._pen_2)
             painter.drawPath(self.path_2)
 
-        # ── 刻度绘制（可选）──
+        # 刻度（可选）
         if self._show_scale:
             self._draw_scale_marks(painter)
 
@@ -394,64 +363,43 @@ class WaveformView(QGraphicsView):
             painter.drawText(QRectF(vx, t2y, TEXT_W, LINE_H),
                              Qt.AlignCenter, label2)
 
-    # ── 网格构建 ──────────────────────────────────
+    # ── 网格绘制（动态，QPainter.drawLine）────────────
 
-    def _clear_grid(self) -> None:
-        for item in self._grid_items:
-            self._scene.removeItem(item)
-        self._grid_items.clear()
-
-    def _build_grid(self) -> None:
-        """创建网格线"""
+    def _draw_grid(self, painter: QPainter) -> None:
+        """用 QPainter 直接画网格线（无 scene 开销）"""
         w, h = self._view_w, self._view_h
+        if w <= 0 or h <= 0:
+            return
         h_step = w / self._grid_h_div
         v_step = h / self._grid_v_div
         pen = QPen(self.COLOR_GRID, 1)
 
         # 水平线
+        painter.setPen(pen)
         for i in range(self._grid_v_div + 1):
-            y = i * v_step
-            line = QGraphicsLineItem(0, y, w, y)
-            line.setPen(pen)
-            self._scene.addItem(line)
-            self._grid_items.append(line)
+            y = int(i * v_step)
+            painter.drawLine(0, y, w, y)
 
         # 垂直线
         for i in range(self._grid_h_div + 1):
-            x = i * h_step
-            line = QGraphicsLineItem(x, 0, x, h)
-            line.setPen(pen)
-            self._scene.addItem(line)
-            self._grid_items.append(line)
+            x = int(i * h_step)
+            painter.drawLine(x, 0, x, h)
 
         # 中心十字线（绿色虚线高亮）
-        cx, cy = w / 2, h / 2
         center_pen = QPen(self.COLOR_ZERO, 1, Qt.DashLine)
-        cx_line = QGraphicsLineItem(cx, 0, cx, h)
-        cx_line.setPen(center_pen)
-        self._scene.addItem(cx_line)
-        self._grid_items.append(cx_line)
-
-        cy_line = QGraphicsLineItem(0, cy, w, cy)
-        cy_line.setPen(center_pen)
-        self._scene.addItem(cy_line)
-        self._grid_items.append(cy_line)
-
-    def _rebuild_grid(self) -> None:
-        """尺寸变化时重建网格"""
-        self._clear_grid()
-        self._build_grid()
+        painter.setPen(center_pen)
+        cx, cy = w // 2, h // 2
+        painter.drawLine(cx, 0, cx, h)
+        painter.drawLine(0, cy, w, cy)
 
     # ── 重建场景 ──────────────────────────────────
 
     def rebuild_overlay(self) -> None:
-        """重建网格（启动时调用）"""
-        self._build_grid()
-        self.viewport().update()
+        """刷新视图（启动时调用，网格在 paintEvent 中动态绘制）"""
+        self.update()
 
     def clear_all(self) -> None:
-        """清除网格和波形（停止时调用），画面完全空白"""
-        self._clear_grid()
+        """清空波形和滚动条（网格永显）"""
         self.path_1 = None
         self.path_2 = None
         self.pending_path_1 = None
@@ -464,7 +412,7 @@ class WaveformView(QGraphicsView):
             self._hbar.setRange(0, 0)
             self._hbar.setValue(0)
             self._hbar.blockSignals(False)
-        self.viewport().update()
+        self.update()
 
     def clear_waveforms(self) -> None:
         """仅清波形路径 + 重置滚动条，保留网格和叠加信息"""
@@ -480,7 +428,7 @@ class WaveformView(QGraphicsView):
             self._hbar.setRange(0, 0)
             self._hbar.setValue(0)
             self._hbar.blockSignals(False)
-        self.viewport().update()
+        self.update()
 
     def reset_scroll(self) -> None:
         """重置水平滚动切回自动"""
@@ -497,40 +445,23 @@ class WaveformView(QGraphicsView):
         self._fps = fps
         self._refresh_timer.start(int(1000 / fps))
 
-    # ── 心跳检测 ────────────────────────────────────
-
-    def set_heartbeat(self, hb: HeartbeatWidget | None) -> None:
-        """注入 HeartbeatWidget，铺满 viewport 监测 paintEvent"""
-        self._heartbeat = hb
-        if hb is not None:
-            hb.setParent(self.viewport())
-            hb.setGeometry(0, 0, self._view_w, self._view_h)
+    def get_fps(self) -> int:
+        return self._fps
 
     def set_show_scale(self, enabled: bool) -> None:
         """开关刻度绘制（由 UI 复选框控制）"""
         if self._show_scale != enabled:
             self._show_scale = enabled
-            self.viewport().update()
+            self.update()
 
-    _HEARTBEAT_TIMEOUT = 1.5  # 心跳停止超过此秒数则跳过渲染
+    def _should_render(self) -> bool:
+        return is_in_active_viewport(self)
+
 
     def _on_refresh_tick(self) -> None:
-        """内部定时器到期：心跳检测 → 背压保护 → 读 interval → 触发渲染"""
-        # 1. 心跳检测
-        hb = self._heartbeat
-        if hb is not None:
-            if hb.beat_count != self._last_beat_count:
-                self._last_beat_count = hb.beat_count
-                self._heartbeat_stopped = False
-            else:
-                if not self._heartbeat_stopped:
-                    self._heartbeat_stop_time = time.monotonic()
-                    self._heartbeat_stopped = True
-                elif time.monotonic() - self._heartbeat_stop_time > self._HEARTBEAT_TIMEOUT:
-                    return  # 心跳停止超过阈值，跳过渲染
-
-        # 2. RenderCore 背压保护
-        if self._render_busy:
+        """内部定时器到期：背压保护 → 读 interval → 触发渲染"""
+        # print(self._should_render())
+        if self._render_busy or not self._should_render():
             return
 
         # 3. 读 interval 并请求渲染
@@ -562,6 +493,7 @@ class WaveformView(QGraphicsView):
             new_ms = self._x_window_ms * factor
             new_ms = max(0.001, min(100_000.0, new_ms))
             self.set_x_window_ms(new_ms)
+        event.accept()
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
@@ -583,12 +515,17 @@ class WaveformView(QGraphicsView):
                 else:
                     self._drag_start_x_scroll = self._x_scroll
             self.setCursor(Qt.ClosedHandCursor)
-
-        super().mousePressEvent(event)
+            event.accept()
+        else:
+            super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
         mode = self._drag_mode
         if mode is None:
+            super().mouseMoveEvent(event)
+            return
+
+        if self._drag_start_x is None:
             super().mouseMoveEvent(event)
             return
 
@@ -624,31 +561,42 @@ class WaveformView(QGraphicsView):
                     new_offset = max(-100_000, min(100_000, new_offset))
                     self.set_y_offset_mv_2(new_offset)
 
-        super().mouseMoveEvent(event)
+        event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
         if self._drag_mode is not None:
             self._drag_mode = None
+            self._drag_start_x = None
             self.unsetCursor()
-        super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton:
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event) -> None:
         """双击切回自动滚动"""
         self._x_scroll = None
-        super().mouseDoubleClickEvent(event)
+        event.accept()
 
     # ── 通道选择 ──────────────────────────────────
 
     def set_active_channel(self, ch: int) -> None:
         """设置激活通道（1=CH1, 2=CH2）"""
         self._active_channel = ch
+        self.active_channel_changed.emit(ch)
+
+    # ── 右键菜单 ──────────────────────────────────
+
+    def contextMenuEvent(self, event) -> None:
+        """右键直接切换通道"""
+        ch = 2 if self._active_channel == 1 else 1
+        self.set_active_channel(ch)
+        event.accept()
 
     # ── cleanup ──────────────────────────────────
 
     def cleanup(self) -> None:
         self._refresh_timer.stop()
-        self._scene.clear()
-        self._grid_items.clear()
         self.path_1 = None
         self.path_2 = None
         self.pending_path_1 = None
