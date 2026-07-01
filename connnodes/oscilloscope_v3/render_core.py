@@ -35,7 +35,8 @@ class RenderCore(QObject):
         self._cached_path_1: QPainterPath | None = None
         self._cached_path_2: QPainterPath | None = None
         self._cached_key: tuple | None = None
-
+        self._debug_method: tuple | None = None
+        
     # ── 渲染入口 ────────────────────────────────
 
     @pyqtSlot(object)
@@ -98,9 +99,9 @@ class RenderCore(QObject):
             off_v_2 = params["y_offset_mv_2"] / 1000
 
 
-            path1 = self._build_path(data_1, half_v_1, off_v_1, cy,
+            path1, method1 = self._build_path(data_1, half_v_1, off_v_1, cy,
                                     screen_w, window_linecount)
-            path2 = self._build_path(data_2, half_v_2, off_v_2, cy,
+            path2, method2 = self._build_path(data_2, half_v_2, off_v_2, cy,
                                     screen_w, window_linecount)
             
             # ⚠️ 跨线程写 WaveformView.pending_path（渲染线程→主线程对象）
@@ -122,13 +123,16 @@ class RenderCore(QObject):
             # 缓存
             self._write_cache(params, wc1, wc2, path1, path2)
 
+            # 调试信息
+            self._debug_method = (method1, method2)
+
     # ── 路径构建 ────────────────────────────────
 
     @staticmethod
     def _build_path(data: np.ndarray,
                     half_v: float, off_v: float,
                     cy: float,
-                    screen_w: int, window_linecount: float) -> QPainterPath | None:
+                    screen_w: int, window_linecount: float) -> tuple[QPainterPath | None, str]:
         """构建 QPainterPath
 
         两种模式:
@@ -136,6 +140,7 @@ class RenderCore(QObject):
           k >  3  : 降采样模式，每像素一个桶画竖线
         """
         path = QPainterPath()
+        method = None
 
         if window_linecount / screen_w <= 3:
             # 直接模式：不降采样，每个点按时间比例定位
@@ -153,47 +158,44 @@ class RenderCore(QObject):
                     started = True
                 else:
                     path.lineTo(x, y)
+            method = "direct"
         else:
-            # 降采样模式：每像素一个桶，取 min/max 画竖线
-            # 相邻桶电压区间不重叠时（跳变沿），画对角线连接
-            data_max, data_min = RenderCore.downsample_peak(
-                data, round(window_linecount / screen_w + 1))
-            prev_max_val = prev_min_val = None
-            prev_y_max = prev_y_min = None
-            for i in range(len(data_max)):
+            # 降采样模式：三个数组，单路径编织
+            #   主体 → max → min → 回主体 → 下一个主体（全程一个子路径）
+            k = round(window_linecount / screen_w + 1)
+            data_max, data_min = RenderCore.downsample_peak(data, k)
+            data_normal = RenderCore.downsample(data, k)
+
+            started = False
+            for i in range(len(data_normal)):
                 val_max, val_min = float(data_max[i]), float(data_min[i])
                 if np.isnan(val_max) or np.isnan(val_min):
-                    prev_max_val = prev_min_val = None
-                    prev_y_max = prev_y_min = None
+                    started = False
                     continue
+
+                val = float(data_normal[i])
+                y = RenderCore._y(val, half_v, off_v, cy)
+
+                # 主体连线（连接到当前桶 body 点）
+                if not started:
+                    path.moveTo(i, y)
+                    started = True
+                else:
+                    path.lineTo(i, y)
+
+                # 编织毛刺：body → max → min → body（全部 lineTo，保持子路径连续）
                 y_max = RenderCore._y(val_max, half_v, off_v, cy)
                 y_min = RenderCore._y(val_min, half_v, off_v, cy)
-
-                # 竖线（当前桶的 min-max 范围）
-                path.moveTo(i, y_max)
+                path.lineTo(i, y_max)
                 path.lineTo(i, y_min)
+                path.lineTo(i, y)
 
-                # 非重叠 → 画连接线
-                if prev_max_val is not None:
-                    if val_max < prev_min_val:
-                        # 下降沿：下一桶整体在上一桶下方
-                        # 从 prev 底部连接到 next 顶部
-                        path.moveTo(i - 1, prev_y_min)
-                        path.lineTo(i, y_max)
-                    elif val_min > prev_max_val:
-                        # 上升沿：下一桶整体在上一桶上方
-                        # 从 prev 顶部连接到 next 底部
-                        path.moveTo(i - 1, prev_y_max)
-                        path.lineTo(i, y_min)
-
-                prev_max_val = val_max
-                prev_min_val = val_min
-                prev_y_max = y_max
-                prev_y_min = y_min
+            method = "downsample_peak"
 
         if path.elementCount() == 0:
-            return None
-        return path
+            return None, method
+        
+        return path, method
 
     # ── 降采样 + 坐标映射 ──────────────────────
 
@@ -216,6 +218,15 @@ class RenderCore(QObject):
         
         self._cached_path_1 = path1
         self._cached_path_2 = path2
+
+    @staticmethod
+    def downsample(data: np.ndarray, k: int) -> np.ndarray:
+        """普通降采样，每 k 个点取一个（步进采样）"""
+        n = len(data)
+        M = n // k
+        if M == 0:
+            return np.array([], dtype=data.dtype)
+        return data[:M * k:k]
 
     @staticmethod
     def downsample_peak(data: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:

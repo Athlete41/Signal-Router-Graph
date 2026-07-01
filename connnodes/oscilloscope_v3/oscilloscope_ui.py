@@ -197,7 +197,7 @@ class Ui_OscilloscopeV3(object):
         of_.addRow("帧率:", self.fps_spin)
 
         self.aa_check = QCheckBox("抗锯齿", Content)
-        self.aa_check.setChecked(True)
+        self.aa_check.setChecked(False)
         self.aa_check.setStyleSheet("color: #f0f0f0;")
         of_.addRow(self.aa_check)
 

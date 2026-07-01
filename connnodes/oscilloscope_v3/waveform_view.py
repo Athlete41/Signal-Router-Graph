@@ -59,7 +59,7 @@ class WaveformView(QWidget):
         self._view_w = self._DEFAULT_WIDTH
         self._view_h = self._DEFAULT_HEIGHT
 
-        self._antialiasing = True
+        self._antialiasing = False
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(200, 100)
