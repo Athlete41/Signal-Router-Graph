@@ -16,6 +16,8 @@ from PyQt5.QtGui import QPainterPath
 
 from conn_utils import is_in_active_viewport
 
+_RENDER_FLOW_DEBUG = False  # 忽略 _should_render() 检查（仅用于调试)
+
 class WaveformView(QWidget):
     """波形显示视图（双缓冲 + paintEvent 绘制波形）"""
 
@@ -461,7 +463,11 @@ class WaveformView(QWidget):
     def _on_refresh_tick(self) -> None:
         """内部定时器到期：背压保护 → 读 interval → 触发渲染"""
         # print(self._should_render())
-        if self._render_busy or not self._should_render():
+
+        if not _RENDER_FLOW_DEBUG and not self._should_render():
+            return
+
+        if self._render_busy:
             return
 
         # 3. 读 interval 并请求渲染

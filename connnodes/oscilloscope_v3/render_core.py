@@ -77,6 +77,7 @@ class RenderCore(QObject):
         wc2 = ring_2.get_write_count()
 
         if self._check_cache(params, wc1, wc2):
+        # if self._check_cache(params, wc1, wc2) and False:
             # 缓存命中
             # ⚠️ 跨线程写 pending_path，安全依赖数据链路协议，见下方同款注释
             self._waveform_view.pending_path_1 = self._cached_path_1
@@ -131,12 +132,12 @@ class RenderCore(QObject):
         """构建 QPainterPath
 
         两种模式:
-          k <= 2  : 直接模式，每个点按时间比例定位
-          k >  2  : 降采样模式，每像素一个桶画竖线
+          k <= 3  : 直接模式，每个点按时间比例定位
+          k >  3  : 降采样模式，每像素一个桶画竖线
         """
         path = QPainterPath()
 
-        if window_linecount / screen_w <= 2:
+        if window_linecount / screen_w <= 3:
             # 直接模式：不降采样，每个点按时间比例定位
             px_per_pt = screen_w / window_linecount  # 每个数据点占多少像素
             started = False
@@ -154,15 +155,41 @@ class RenderCore(QObject):
                     path.lineTo(x, y)
         else:
             # 降采样模式：每像素一个桶，取 min/max 画竖线
-            data_max, data_min = RenderCore.downsample_peak(data, round(window_linecount / screen_w + 1))
+            # 相邻桶电压区间不重叠时（跳变沿），画对角线连接
+            data_max, data_min = RenderCore.downsample_peak(
+                data, round(window_linecount / screen_w + 1))
+            prev_max_val = prev_min_val = None
+            prev_y_max = prev_y_min = None
             for i in range(len(data_max)):
                 val_max, val_min = float(data_max[i]), float(data_min[i])
                 if np.isnan(val_max) or np.isnan(val_min):
+                    prev_max_val = prev_min_val = None
+                    prev_y_max = prev_y_min = None
                     continue
                 y_max = RenderCore._y(val_max, half_v, off_v, cy)
                 y_min = RenderCore._y(val_min, half_v, off_v, cy)
+
+                # 竖线（当前桶的 min-max 范围）
                 path.moveTo(i, y_max)
                 path.lineTo(i, y_min)
+
+                # 非重叠 → 画连接线
+                if prev_max_val is not None:
+                    if val_max < prev_min_val:
+                        # 下降沿：下一桶整体在上一桶下方
+                        # 从 prev 底部连接到 next 顶部
+                        path.moveTo(i - 1, prev_y_min)
+                        path.lineTo(i, y_max)
+                    elif val_min > prev_max_val:
+                        # 上升沿：下一桶整体在上一桶上方
+                        # 从 prev 顶部连接到 next 底部
+                        path.moveTo(i - 1, prev_y_max)
+                        path.lineTo(i, y_min)
+
+                prev_max_val = val_max
+                prev_min_val = val_min
+                prev_y_max = y_max
+                prev_y_min = y_min
 
         if path.elementCount() == 0:
             return None
