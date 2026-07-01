@@ -40,7 +40,8 @@
             "x_div": 2.0,
             "y_div": 2.0,
             "fps": 30,
-            "mem_depth": 10000
+            "mem_depth": 10000,
+            "show_scale": true
         },
         {
             "id": 2732815418416,
@@ -134,6 +135,37 @@
             "width": 276,
             "height": 150,
             "channel_offset": 0
+        },
+        {
+            "id": 2042470160784,
+            "title": "\u4fe1\u53f7\u53d1\u751f\u5668",
+            "pos_x": -577.1874999999998,
+            "pos_y": 420.93749999999994,
+            "inputs": [],
+            "outputs": [
+                {
+                    "id": 2042470167696,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 5,
+                    "socket_type": 2
+                }
+            ],
+            "content": {},
+            "tppath": [
+                "\u6570\u636e\u6e90",
+                "\u4fe1\u53f7\u53d1\u751f\u5668"
+            ],
+            "width": 320,
+            "height": 272,
+            "wave_type_index": 0,
+            "frequency_hz": 1000.0,
+            "interval_us": 10.0,
+            "packet_size": 1024,
+            "amplitude_v": 1.0,
+            "offset_v": 0.0,
+            "timer_enabled": false,
+            "timer_interval_s": 1.0
         }
     ],
     "edges": [
@@ -160,6 +192,12 @@
             "edge_type": 5,
             "start": 2732815430944,
             "end": 2732815331296
+        },
+        {
+            "id": 2042470166208,
+            "edge_type": 5,
+            "start": 2042470167696,
+            "end": 2732815329856
         }
     ]
 }
